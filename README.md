@@ -7,6 +7,13 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 
 ![Home: quick entry form and recent transactions](docs/screenshots/home.png)
 
+## Contents
+
+- [Features](#features)
+- [Running it](#running-it)
+- [Development](#development)
+- [License](#license)
+
 ## Features
 
 - **Fast entry.** One form for spending, income and transfers, with autocomplete from your past transactions that fills in the usual account, amount and tags.
