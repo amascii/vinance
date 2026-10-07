@@ -1,0 +1,131 @@
+package views
+
+templ AccountManagePage(m AccountManage) {
+	@Layout("Manage accounts · vinance") {
+		<p class="crumbs"><a href="/accounts">&larr; Balances</a></p>
+		<h2>Manage accounts</h2>
+		if m.Flash != "" {
+			<p class="flash" role="status">{ m.Flash }</p>
+		}
+		if m.Problem != "" && m.ProblemID == 0 {
+			<p class="problems" role="alert">{ m.Problem }</p>
+		}
+		<details class="add-account" open?={ m.Problem != "" && m.ProblemID == 0 }>
+			<summary role="button" class="secondary outline">+ Add an account</summary>
+			<form method="post" action="/accounts/manage/create" class="account-form">
+				<label>
+					Name
+					<input type="text" name="name" value={ m.Form.Name } required maxlength="60" placeholder="e.g. Rainy Day Fund" autocomplete="off"/>
+				</label>
+				<div class="filter-row">
+					<label>
+						Type
+						<select name="type">
+							<option value="asset" selected?={ m.Form.Type != "liability" }>Asset (bank, cash, investments)</option>
+							<option value="liability" selected?={ m.Form.Type == "liability" }>Liability (credit card, loan)</option>
+						</select>
+					</label>
+					<label>
+						Currency
+						<input type="text" name="currency" value={ nonEmpty(m.Form.Currency, "USD") } list="currency-options" required minlength="3" maxlength="3" autocomplete="off" autocapitalize="characters"/>
+					</label>
+				</div>
+				<div class="filter-row">
+					<label>
+						Opening balance <small>(optional; what you hold, or owe for a liability)</small>
+						<input type="text" inputmode="decimal" name="opening" value={ m.Form.Opening } placeholder="0.00" autocomplete="off"/>
+					</label>
+					<label>
+						As of
+						<input type="date" name="opening_date" value={ m.Form.OpeningDate }/>
+					</label>
+				</div>
+				<button type="submit">Add account</button>
+			</form>
+		</details>
+		<datalist id="currency-options">
+			<option value="USD"></option>
+			<option value="MXN"></option>
+			<option value="JPY"></option>
+			<option value="KRW"></option>
+			<option value="EUR"></option>
+		</datalist>
+		@accountGroup("Accounts", m.Active, m)
+		if len(m.Archived) > 0 {
+			@accountGroup("Archived", m.Archived, m)
+		}
+	}
+}
+
+templ accountGroup(title string, rows []AccountManageRow, m AccountManage) {
+	<h3>{ title }</h3>
+	if len(rows) == 0 {
+		<p class="empty">None yet.</p>
+	}
+	<ul class="account-list">
+		for _, a := range rows {
+			<li>
+				<div class="tag-head">
+					<a class="tag-name" href={ templ.SafeURL(a.Href) }>{ a.Name }</a>
+					<span class="tag-uses">{ Thousands(a.Splits) } { plural(a.Splits, "line", "lines") }</span>
+				</div>
+				<div class="account-meta">
+					<span class="chip">{ a.Type }</span>
+					<span class="chip">{ a.Currency }</span>
+					<span class="chip tag">{ "@" + a.Slug }</span>
+				</div>
+				<details open?={ m.ProblemID == a.ID }>
+					<summary aria-label={ "Edit " + a.Name } title="Edit">
+						<svg viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+					</summary>
+					if m.ProblemID == a.ID && m.Problem != "" {
+						<p class="problems" role="alert">{ m.Problem }</p>
+					}
+					<form method="post" action={ templ.SafeURL("/accounts/manage/" + itoa(a.ID) + "/update") } class="account-form">
+						<label>
+							Name
+							<input type="text" name="name" value={ a.Name } required maxlength="60" autocomplete="off"/>
+						</label>
+						<div class="filter-row">
+							<label>
+								Type
+								<select name="type">
+									<option value="asset" selected?={ a.Type == "asset" }>Asset</option>
+									<option value="liability" selected?={ a.Type == "liability" }>Liability</option>
+								</select>
+							</label>
+							<label>
+								Currency
+								<input type="text" name="currency" value={ a.Currency } list="currency-options" required minlength="3" maxlength="3" readonly?={ a.Splits > 0 } autocomplete="off" autocapitalize="characters"/>
+							</label>
+						</div>
+						if a.Splits > 0 {
+							<p class="hint">The currency is fixed once an account has transactions.</p>
+						}
+						<p class="hint">Renaming changes how you type it in quick-add (currently { "@" + a.Slug }).</p>
+						<button type="submit" class="secondary outline">Save</button>
+					</form>
+					<div class="actions">
+						<form method="post" action={ templ.SafeURL("/accounts/manage/" + itoa(a.ID) + "/archive") }>
+							if a.Archived {
+								<input type="hidden" name="archived" value="0"/>
+								<button type="submit" class="secondary outline">Restore</button>
+							} else {
+								<input type="hidden" name="archived" value="1"/>
+								<button type="submit" class="secondary outline">Archive</button>
+							}
+						</form>
+						if a.Splits == 0 {
+							<form method="post" action={ templ.SafeURL("/accounts/manage/" + itoa(a.ID) + "/delete") }>
+								<button type="submit" class="contrast outline">Delete</button>
+							</form>
+						}
+					</div>
+					if !a.Archived {
+						<p class="hint">Archiving hides it from quick-add; its history and balance stay.</p>
+					}
+				</details>
+			</li>
+		}
+	</ul>
+}

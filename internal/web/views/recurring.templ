@@ -1,0 +1,138 @@
+package views
+
+templ RecurringPageView(m RecurringPage) {
+	@Layout("Recurring · vinance") {
+		<h2>Recurring</h2>
+		if m.Flash != "" {
+			<p class="flash" role="status">{ m.Flash }</p>
+		}
+		if m.Problem != "" && m.ProblemID == 0 {
+			<p class="problems" role="alert">{ m.Problem }</p>
+		}
+		<h3>Due</h3>
+		if len(m.Due) == 0 {
+			<p class="empty">Nothing is due.</p>
+		} else {
+			<ul class="due-list">
+				for _, d := range m.Due {
+					<li class={ templ.KV("overdue", d.Overdue) }>
+						<div class="line1">
+							<span class="desc">{ d.Description }</span>
+							<span class="amount">{ d.Amount }</span>
+						</div>
+						<div class="line2">
+							<span class="date">{ d.Date }</span>
+							if d.Overdue {
+								<span class="chip warn">overdue</span>
+							}
+							for _, a := range d.Accounts {
+								<span class="chip account">{ a }</span>
+							}
+							for _, t := range d.Tags {
+								<span class="chip tag">#{ t }</span>
+							}
+						</div>
+						if d.Problem != "" {
+							<p class="problems" role="alert">{ d.Problem }</p>
+						}
+						<div class="actions">
+							<form method="post" action={ templ.SafeURL("/recurring/" + itoa(d.RuleID) + "/accept") }>
+								<input type="hidden" name="date" value={ d.Date }/>
+								<button type="submit" disabled?={ d.Problem != "" }>Add</button>
+							</form>
+							<form method="post" action={ templ.SafeURL("/recurring/" + itoa(d.RuleID) + "/skip") }>
+								<input type="hidden" name="date" value={ d.Date }/>
+								<button type="submit" class="secondary outline">Skip</button>
+							</form>
+						</div>
+					</li>
+				}
+			</ul>
+		}
+		<h3>Rules</h3>
+		<details class="add-account" open?={ m.Problem != "" && m.ProblemID == 0 }>
+			<summary role="button" class="secondary outline">+ Add a recurring transaction</summary>
+			@ruleForm("/recurring/create", m.Form, "Add")
+		</details>
+		if len(m.Rules) == 0 {
+			<p class="empty">No recurring transactions yet. Rent, subscriptions and paychecks are good candidates.</p>
+		}
+		<ul class="rule-list">
+			for _, r := range m.Rules {
+				<li class={ templ.KV("paused", !r.Active) }>
+					<div class="tag-head">
+						<span class="tag-name">{ r.Text }</span>
+						<span class="tag-uses">{ r.Next }</span>
+					</div>
+					<div class="account-meta">
+						<span class="chip">{ r.Schedule }</span>
+						if r.Preview != nil {
+							<span class="chip">{ r.Preview.Amount }</span>
+							for _, a := range r.Preview.Accounts {
+								<span class="chip account">{ a }</span>
+							}
+						}
+					</div>
+					if r.Problem != "" && m.ProblemID != r.ID {
+						<p class="problems" role="alert">{ r.Problem }</p>
+					}
+					<details open?={ m.ProblemID == r.ID }>
+						<summary>Edit</summary>
+						if m.ProblemID == r.ID && m.Problem != "" {
+							<p class="problems" role="alert">{ m.Problem }</p>
+						}
+						@ruleForm("/recurring/"+itoa(r.ID)+"/update", r.Form, "Save")
+						<div class="actions">
+							<form method="post" action={ templ.SafeURL("/recurring/" + itoa(r.ID) + "/active") }>
+								if r.Active {
+									<input type="hidden" name="active" value="0"/>
+									<button type="submit" class="secondary outline">Pause</button>
+								} else {
+									<input type="hidden" name="active" value="1"/>
+									<button type="submit" class="secondary outline">Resume</button>
+								}
+							</form>
+							<form method="post" action={ templ.SafeURL("/recurring/" + itoa(r.ID) + "/delete") }>
+								<button type="submit" class="contrast outline">Delete</button>
+							</form>
+						</div>
+					</details>
+				</li>
+			}
+		</ul>
+	}
+}
+
+templ ruleForm(action string, f RuleForm, submit string) {
+	<form method="post" action={ templ.SafeURL(action) } class="account-form">
+		<label>
+			What to add <small>(like quick-add, without a date; include the @account)</small>
+			<input type="text" name="text" value={ f.Text } required placeholder="1500 Rent #rent @wharf-bank" autocomplete="off" autocapitalize="none" spellcheck="false"/>
+		</label>
+		<div class="filter-row">
+			<label>
+				Repeats
+				<select name="freq">
+					<option value="monthly" selected?={ f.Freq == "monthly" || f.Freq == "" }>Monthly</option>
+					<option value="weekly" selected?={ f.Freq == "weekly" }>Weekly</option>
+					<option value="yearly" selected?={ f.Freq == "yearly" }>Yearly</option>
+				</select>
+			</label>
+			<label>
+				Every
+				<input type="number" name="every" value={ nonEmpty(f.Every, "1") } min="1" max="99" required/>
+			</label>
+		</div>
+		<div class="filter-row">
+			<label>
+				First date
+				<input type="date" name="anchor" value={ f.Anchor } required/>
+			</label>
+			<label>
+				Last date <small>(optional)</small>
+				<input type="date" name="end" value={ f.End }/>
+			</label>
+		</div>
+		<button type="submit">{ submit }</button>
+	</form>
+}

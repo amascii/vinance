@@ -1,0 +1,73 @@
+package views
+
+templ TagManagePage(m TagManage) {
+	@Layout("Manage tags · vinance") {
+		<p class="crumbs"><a href="/tags">&larr; Tag report</a></p>
+		<h2>Manage tags</h2>
+		if m.Flash != "" {
+			<p class="flash" role="status">{ m.Flash }</p>
+		}
+		if m.Problem != "" {
+			<p class="problems" role="alert">{ m.Problem }</p>
+		}
+		if m.Confirm != nil {
+			<form method="post" action="/tags/manage/rename" class="notice warn merge-confirm">
+				<p>
+					A tag named <strong>{ m.Confirm.To }</strong> already exists ({ Thousands(m.Confirm.ToSplits) } { plural(m.Confirm.ToSplits, "line", "lines") }).
+					Merge <strong>{ m.Confirm.From }</strong> ({ Thousands(m.Confirm.FromSplits) } { plural(m.Confirm.FromSplits, "line", "lines") }) into it? This can't be undone.
+				</p>
+				<input type="hidden" name="from" value={ m.Confirm.From }/>
+				<input type="hidden" name="to" value={ m.Confirm.To }/>
+				<input type="hidden" name="confirm" value="1"/>
+				<input type="hidden" name="q" value={ m.Q }/>
+				<input type="hidden" name="sort" value={ m.Sort }/>
+				<div class="actions">
+					<button type="submit">Merge</button>
+					<a href={ templ.SafeURL(ManageURL(m.Q, m.Sort)) } role="button" class="secondary outline">Cancel</a>
+				</div>
+			</form>
+		}
+		<p class="hint">Renaming a tag to one that already exists merges the two. Tags are lowercase, with dashes instead of spaces.</p>
+		<form method="get" action="/tags/manage" class="manage-filter">
+			<input type="search" name="q" value={ m.Q } placeholder="Filter tags" aria-label="Filter tags"/>
+			<select name="sort" aria-label="Sort">
+				<option value="name" selected?={ m.Sort == "name" }>By name</option>
+				<option value="uses" selected?={ m.Sort == "uses" }>Most used</option>
+			</select>
+			<button type="submit" class="secondary outline">Apply</button>
+		</form>
+		<p class="count">{ Thousands(len(m.Tags)) } { plural(len(m.Tags), "tag", "tags") }
+			if len(m.Tags) != m.Total {
+				of { Thousands(m.Total) }
+			}
+		</p>
+		<ul class="tag-list">
+			for _, t := range m.Tags {
+				<li>
+					<div class="tag-head">
+						<a class="tag-name" href={ templ.SafeURL(t.Href) }>#{ t.Name }</a>
+						<span class="tag-uses">{ Thousands(t.Splits) } { plural(t.Splits, "line", "lines") }</span>
+					</div>
+					<details>
+						<summary>Rename or merge</summary>
+						<form method="post" action="/tags/manage/rename" class="rename-form">
+							<input type="hidden" name="from" value={ t.Name }/>
+							<input type="hidden" name="q" value={ m.Q }/>
+							<input type="hidden" name="sort" value={ m.Sort }/>
+							<input type="text" name="to" value={ t.Name } aria-label={ "New name for " + t.Name } autocomplete="off" autocapitalize="none" spellcheck="false"/>
+							<button type="submit" class="secondary outline">Save</button>
+						</form>
+						if t.Splits == 0 {
+							<form method="post" action="/tags/manage/delete">
+								<input type="hidden" name="name" value={ t.Name }/>
+								<input type="hidden" name="q" value={ m.Q }/>
+								<input type="hidden" name="sort" value={ m.Sort }/>
+								<button type="submit" class="contrast outline">Delete unused tag</button>
+							</form>
+						}
+					</details>
+				</li>
+			}
+		</ul>
+	}
+}

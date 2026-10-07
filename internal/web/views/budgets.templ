@@ -1,0 +1,97 @@
+package views
+
+import "fmt"
+
+templ BudgetsPageView(m BudgetsPage) {
+	@Layout("Budgets · vinance") {
+		<h2>Budgets</h2>
+		<nav class="month-nav" aria-label="Month">
+			<a href={ templ.SafeURL(m.PrevHref) } aria-label="Previous month">&larr;</a>
+			<strong>{ m.MonthLabel }</strong>
+			<a href={ templ.SafeURL(m.NextHref) } aria-label="Next month">&rarr;</a>
+		</nav>
+		if m.Flash != "" {
+			<p class="flash" role="status">{ m.Flash }</p>
+		}
+		if m.Problem != "" && m.ProblemTag == "" {
+			<p class="problems" role="alert">{ m.Problem }</p>
+		}
+		if len(m.Bars) > 0 {
+			<section class="networth">
+				<p class="label">Spent this month, all tags</p>
+				<p class="figure">{ m.TotalSpending }</p>
+				<p class="breakdown">{ m.TotalBudget } budgeted across { Thousands(len(m.Bars)) } { plural(len(m.Bars), "tag", "tags") }</p>
+			</section>
+		}
+		if len(m.Missing) > 0 {
+			<p class="notice warn">No exchange rate on file for { joinComma(m.Missing) }; those amounts are left out.</p>
+		}
+		if len(m.Bars) == 0 {
+			<p class="empty">No budgets yet. Pick a tag and a monthly amount below.</p>
+		} else {
+			<ul class="budgets">
+				for _, b := range m.Bars {
+					@budgetBar(b, m)
+				}
+			</ul>
+			if m.PaceNote != "" {
+				<p class="hint pace-note">The thin tick marks an even pace: { m.PaceNote }.</p>
+			}
+		}
+		<h3>Set a budget</h3>
+		<form method="post" action="/budgets/set" class="account-form">
+			<input type="hidden" name="month" value={ m.Month }/>
+			<div class="filter-row">
+				<label>
+					Tag
+					<input type="text" name="tag" value={ m.Form.Tag } list="budget-tags" required placeholder="groceries" autocomplete="off" autocapitalize="none" spellcheck="false"/>
+				</label>
+				<label>
+					Per month (USD)
+					<input type="text" inputmode="decimal" name="amount" value={ m.Form.Amount } required placeholder="400.00" autocomplete="off"/>
+				</label>
+			</div>
+			<datalist id="budget-tags">
+				for _, t := range m.TagOptions {
+					<option value={ t }></option>
+				}
+			</datalist>
+			<button type="submit">Save budget</button>
+			<p class="hint">Spending counts every line carrying the tag, in USD, exactly like the <a href="/tags">tag report</a>. Setting a tag that already has a budget changes it.</p>
+		</form>
+	}
+}
+
+templ budgetBar(b BudgetBar, m BudgetsPage) {
+	<li class={ "budget", "state-" + b.State }>
+		<div class="bar-head">
+			<a class="bar-label" href={ templ.SafeURL(b.Href) }>{ b.Tag }</a>
+			<span class="bar-value">{ b.Spent } <small>of { b.Budget }</small></span>
+		</div>
+		<div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow={ itoa(int64(min(b.Percent, 100))) } aria-label={ b.Tag + " budget used" }>
+			<span class="meter-fill" style={ templ.SafeCSS(fmt.Sprintf("width:%d%%", b.Fill)) }></span>
+			if b.Pace >= 0 {
+				<span class="meter-pace" style={ templ.SafeCSS(fmt.Sprintf("left:%d%%", b.Pace)) } title="Even pace"></span>
+			}
+		</div>
+		<p class="meter-status"><span class="state-icon" aria-hidden="true">{ b.Icon }</span> { b.Label } <small>({ itoa(int64(b.Percent)) }% used)</small></p>
+		<details open?={ m.ProblemTag == b.Tag }>
+			<summary>Change</summary>
+			if m.ProblemTag == b.Tag && m.Problem != "" {
+				<p class="problems" role="alert">{ m.Problem }</p>
+			}
+			<form method="post" action="/budgets/set" class="rename-form">
+				<input type="hidden" name="month" value={ m.Month }/>
+				<input type="hidden" name="tag" value={ b.Tag }/>
+				<input type="hidden" name="edit" value="1"/>
+				<input type="text" inputmode="decimal" name="amount" value={ b.AmountVal } aria-label={ "Monthly budget for " + b.Tag } autocomplete="off"/>
+				<button type="submit" class="secondary outline">Save</button>
+			</form>
+			<form method="post" action="/budgets/delete">
+				<input type="hidden" name="month" value={ m.Month }/>
+				<input type="hidden" name="tag" value={ b.Tag }/>
+				<button type="submit" class="contrast outline">Remove budget</button>
+			</form>
+		</details>
+	</li>
+}

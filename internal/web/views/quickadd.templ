@@ -1,0 +1,291 @@
+package views
+
+templ Home(m QuickAdd) {
+	@Layout("vinance") {
+		@QuickAddPanel(m)
+	}
+}
+
+// QuickAddPanel is the swap target for quick-add submits: the entry form and the recent list.
+templ QuickAddPanel(m QuickAdd) {
+	<section id="qa-panel">
+		if m.NoAccounts {
+			<p class="notice warn first-run">
+				Welcome! Start by <a href="/accounts/manage">adding an account</a> (a bank, card or wallet), then come back and type your first transaction here.
+			</p>
+		}
+		if m.DueCount > 0 {
+			<p class="notice due-banner">
+				<a href="/recurring">
+					{ Thousands(m.DueCount) } recurring { plural(m.DueCount, "transaction is", "transactions are") } due &rarr;
+				</a>
+			</p>
+		}
+		if m.NeedsFixing > 0 {
+			<p class="notice warn imbalance-banner">
+				<a href="/transactions?imbalance=1">
+					{ Thousands(m.NeedsFixing) } { plural(m.NeedsFixing, "transaction needs", "transactions need") } fixing &rarr;
+				</a>
+			</p>
+		}
+		@QuickAddForm(m)
+		<ul id="recent" class="txns">
+			for _, r := range m.Recent {
+				@TxnItem(r)
+			}
+		</ul>
+		<p><a href="/transactions">All transactions &rarr;</a></p>
+	</section>
+}
+
+// QuickAddForm is the entry form. The home page and an account's register both use it; with a
+// Scope the account is fixed (shown, not chosen) and a transfer names the *other* account.
+// Which fields show for Spend / Income / Transfer is pure CSS (:has on the checked radio).
+templ QuickAddForm(m QuickAdd) {
+	<form id="qa-form" class="entry-form" method="post" action="/quickadd" hx-post="/quickadd" hx-target="#qa-panel" hx-swap="outerHTML" data-today={ m.Today } if m.Scope != nil { data-scope-name={ m.Scope.Name } data-scope-currency={ m.Scope.Currency } }>
+		if m.Scope != nil {
+			<input type="hidden" name="scope" value={ m.Scope.Slug }/>
+			<input type="hidden" name="return" value={ m.Return }/>
+		}
+		if len(m.Problems) > 0 {
+			<ul class="problems" role="alert">
+				for _, p := range m.Problems {
+					<li>{ p }</li>
+				}
+			</ul>
+		}
+		<div class="entry-line">
+			<label class="field kind-field">
+				<span class="sr">Type of entry</span>
+				<select name="kind" id="qa-kind">
+					@kindOption("expense", "Spend", m.Form.Kind)
+					@kindOption("income", "Income", m.Form.Kind)
+					@kindOption("transfer", "Transfer", m.Form.Kind)
+				</select>
+			</label>
+			if m.Scope == nil {
+				<label class="field account-field">
+					<span class="sr"><span class="lbl-plain">Account</span><span class="lbl-transfer">From</span></span>
+					<select name="account" id="qa-account">
+						for _, a := range m.Accounts {
+							<option value={ a.Slug } data-currency={ a.Currency } data-name={ a.Name } selected?={ a.Slug == m.Form.Account }>{ a.Name }</option>
+						}
+					</select>
+				</label>
+				<span class="arrow only-transfer" aria-hidden="true">&rarr;</span>
+				<label class="field account-field only-transfer">
+					<span class="sr">To</span>
+					<select name="to" id="qa-to">
+						for _, a := range m.Accounts {
+							<option value={ a.Slug } data-currency={ a.Currency } data-name={ a.Name } selected?={ a.Slug == m.Form.To }>{ a.Name }</option>
+						}
+					</select>
+				</label>
+			} else {
+				<label class="field only-transfer direction">
+					<span class="sr">Direction</span>
+					<select name="direction" id="qa-direction">
+						<option value="out" selected?={ m.Form.Direction != "in" }>Out of { m.Scope.Name } to</option>
+						<option value="in" selected?={ m.Form.Direction == "in" }>Into { m.Scope.Name } from</option>
+					</select>
+				</label>
+				<label class="field account-field only-transfer">
+					<span class="sr">Other account</span>
+					<select name="to" id="qa-to">
+						for _, a := range m.Accounts {
+							if a.Slug != m.Scope.Slug {
+								<option value={ a.Slug } data-currency={ a.Currency } data-name={ a.Name } selected?={ a.Slug == m.Form.To }>{ a.Name }</option>
+							}
+						}
+					</select>
+				</label>
+			}
+			<div class="field date-field">
+				<span class="sr">Date</span>
+				<div class="date-row">
+					<input type="date" name="date" id="qa-date" value={ m.Form.Date } required aria-label="Date"/>
+				</div>
+			</div>
+		</div>
+		<div class="entry-line">
+			<label class="field desc-field">
+				<span class="sr">Description</span>
+				<input
+					type="text"
+					name="description"
+					id="qa-description"
+					value={ m.Form.Description }
+					autocomplete="off"
+					autocapitalize="sentences"
+					spellcheck="false"
+					required
+					autofocus
+					placeholder="Description (type to search past transactions)"
+					hx-post="/quickadd/suggest/description"
+					hx-trigger="input changed delay:150ms"
+					hx-target="#qa-desc-suggestions"
+					hx-swap="innerHTML"
+					hx-sync="this:replace"
+				/>
+			</label>
+			<label class="field amount-field">
+				<span class="sr">Amount</span>
+				<input type="text" name="amount" id="qa-amount" value={ m.Form.Amount } inputmode="decimal" autocomplete="off" required placeholder="Amount"/>
+			</label>
+			<label class="field tags-field">
+				<span class="sr">Tags</span>
+				<input
+					type="text"
+					name="tags"
+					id="qa-tags"
+					value={ m.Form.Tags }
+					autocomplete="off"
+					autocapitalize="none"
+					spellcheck="false"
+					placeholder="#tags"
+					data-tag-input
+					hx-post="/quickadd/suggest/tags"
+					hx-trigger="input changed delay:150ms, focus"
+					hx-target="#qa-tag-suggestions"
+					hx-swap="innerHTML"
+					hx-sync="this:replace"
+				/>
+			</label>
+			<button type="submit" class="add" aria-label="Add" title="Add (Enter)">+</button>
+		</div>
+		<div id="qa-desc-suggestions" aria-live="polite"></div>
+		<div id="qa-tag-suggestions" data-tags-for="qa-tags" aria-live="polite"></div>
+		if m.Flash != "" {
+			<p class="entry-meta"><span class="flash" role="status">{ m.Flash }</span></p>
+		}
+	</form>
+}
+
+templ kindOption(value, label, current string) {
+	<option value={ value } selected?={ value == current || (current == "" && value == "expense") }>{ label }</option>
+}
+
+// ScopedPanel is the entry form on an account's register.
+templ ScopedPanel(m QuickAdd) {
+	<section id="qa-panel" class="scoped-entry">
+		@QuickAddForm(m)
+	</section>
+}
+
+// ScopedEntryPage is the no-JavaScript fallback for a rejected scoped entry.
+templ ScopedEntryPage(m QuickAdd) {
+	@Layout("Add to " + m.Scope.Name + " · vinance") {
+		@ScopedPanel(m)
+		<p><a href={ templ.SafeURL(nonEmpty(m.Return, "/transactions")) }>&larr; Back to { m.Scope.Name }</a></p>
+	}
+}
+
+// DescSuggestions is the list under the description field: past transactions to complete from.
+templ DescSuggestions(items []DescSuggestion) {
+	if len(items) > 0 {
+		<div class="desc-suggestions" role="listbox" aria-label="Past transactions">
+			for _, d := range items {
+				<button
+					type="button"
+					role="option"
+					class="desc-suggestion"
+					aria-selected="false"
+					data-description={ d.Description }
+					data-kind={ d.Fill.Kind }
+					data-account={ d.Fill.Account }
+					data-to={ d.Fill.To }
+					data-direction={ d.Fill.Direction }
+					data-amount={ d.Fill.Amount }
+					data-tags={ d.Fill.Tags }
+				>
+					<span class="d-main">{ d.Description }</span>
+					<small class="d-detail">{ d.Detail }</small>
+				</button>
+			}
+			<p class="hint keys">Tab fills the first one · ↑ ↓ to choose</p>
+		</div>
+	}
+}
+
+// TagSuggestions is the list under the tags field.
+templ TagSuggestions(items []Suggestion) {
+	if len(items) > 0 {
+		<div class="suggestions">
+			for _, s := range items {
+				<button type="button" class="suggestion tag-suggestion" data-tag={ s.Insert }>{ s.Label }</button>
+			}
+		</div>
+	}
+}
+
+templ TxnItem(r TxnRow) {
+	<li class={ "txn", "dir-" + r.Direction, templ.KV("pickable", r.Pick) } data-id={ itoa(r.ID) }>
+		if r.Pick {
+			<input type="checkbox" class="pick" form="bulk" name="id" value={ itoa(r.ID) } aria-label={ "Select " + r.Description }/>
+		}
+		if r.ShowSplits {
+			<details>
+				<summary>
+					@txnSummary(r)
+				</summary>
+				<ul class="splits">
+					for _, sp := range r.Splits {
+						<li class="split">
+							<span class="split-main">
+								if sp.Label != "" {
+									if sp.Warn {
+										<span class="chip warn">{ sp.Label }</span>
+									} else {
+										<span class="chip account">{ sp.Label }</span>
+									}
+								}
+								if sp.Memo != "" {
+									<span class="memo">{ sp.Memo }</span>
+								}
+								for _, t := range sp.Tags {
+									<span class="chip tag">#{ t }</span>
+								}
+							</span>
+							<span class="amount">{ sp.Amount }</span>
+						</li>
+					}
+				</ul>
+			</details>
+		} else {
+			@txnSummary(r)
+		}
+	</li>
+}
+
+templ txnSummary(r TxnRow) {
+	<div class="line1">
+		<span class="desc">
+			if r.EditURL != "" {
+				<a class="edit-link" href={ templ.SafeURL(r.EditURL) }>{ r.Description }</a>
+			} else {
+				{ r.Description }
+			}
+		</span>
+		<span class="amount-col">
+			<span class="amount">{ r.Amount }</span>
+			if r.Running != "" {
+				<small class="running" title="Balance after this transaction">{ r.Running }</small>
+			}
+		</span>
+	</div>
+	<div class="line2">
+		<span class="date">{ r.Date }</span>
+		for _, a := range r.Accounts {
+			<span class="chip account">{ a }</span>
+		}
+		for _, t := range r.Tags {
+			<span class="chip tag">#{ t }</span>
+		}
+		if r.ShowSplits {
+			<span class="chip">{ itoa(int64(len(r.Splits))) } lines</span>
+		}
+		if r.HasImbalance {
+			<span class="chip warn">needs fixing</span>
+		}
+	</div>
+}

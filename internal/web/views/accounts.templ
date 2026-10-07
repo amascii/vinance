@@ -1,0 +1,55 @@
+package views
+
+templ BalancesPage(m Balances) {
+	@Layout("Accounts · vinance") {
+		<h2>Accounts</h2>
+		<section class="networth">
+			<p class="label">Net worth</p>
+			<p class={ "figure", templ.KV("neg", m.NetNegative) }>{ m.NetWorth }</p>
+			<p class="breakdown">{ m.Assets } in assets &minus; { m.Owed } owed</p>
+		</section>
+		if len(m.MissingRates) > 0 {
+			<p class="notice warn">
+				No exchange rate on file for { joinComma(m.MissingRates) }, so those balances are left out of the totals.
+			</p>
+		}
+		@balanceGroup("Assets", m.AssetRows)
+		@balanceGroup("Liabilities", m.LiabilityRows)
+		if len(m.RateNotes) > 0 {
+			<p class="hint">Converted to USD at the latest rates on file: { joinComma(m.RateNotes) }.</p>
+		}
+		<p><a href="/accounts/manage">Add, rename or archive accounts &rarr;</a></p>
+	}
+}
+
+templ balanceGroup(title string, rows []BalanceRow) {
+	<h3>{ title }</h3>
+	if len(rows) == 0 {
+		<p class="empty">None yet.</p>
+	} else {
+		<ul class="balances">
+			for _, r := range rows {
+				<li class={ templ.KV("zero", r.Zero), templ.KV("archived", r.Archived) }>
+					<span class="acct-left">
+						<input type="checkbox" class="tick" autocomplete="off" aria-label={ "Mark " + r.Name + " as done" }/>
+						<a class="name" href={ templ.SafeURL(r.Href) }>
+							{ r.Name }
+							if r.Archived {
+								<span class="chip">archived</span>
+							}
+						</a>
+					</span>
+					<span class="amounts">
+						<span class="balance">{ r.Balance }</span>
+						if r.USD != "" {
+							<small class="usd">{ r.USD }</small>
+						}
+						if r.NoRate {
+							<small class="usd warn">no rate</small>
+						}
+					</span>
+				</li>
+			}
+		</ul>
+	}
+}

@@ -1,0 +1,65 @@
+package views
+
+import "fmt"
+
+templ TagsPageView(m TagsPage) {
+	@Layout("Tags · vinance") {
+		<h2>Tags</h2>
+		for _, n := range m.Notices {
+			<p class="problems" role="alert">{ n }</p>
+		}
+		<nav class="choices" aria-label="Report type">
+			for _, k := range m.Kinds {
+				<a href={ templ.SafeURL(k.Href) } class={ templ.KV("active", k.Active) } aria-current?={ k.Active }>{ k.Label }</a>
+			}
+		</nav>
+		<nav class="choices" aria-label="Date range">
+			for _, r := range m.Ranges {
+				<a href={ templ.SafeURL(r.Href) } class={ templ.KV("active", r.Active) } aria-current?={ r.Active }>{ r.Label }</a>
+			}
+		</nav>
+		<form method="get" action="/tags" class="range-form">
+			<input type="hidden" name="kind" value={ m.Kind }/>
+			<input type="date" name="from" value={ m.From } aria-label="From date"/>
+			<input type="date" name="to" value={ m.To } aria-label="To date"/>
+			<button type="submit" class="secondary outline">Apply</button>
+		</form>
+		<section class="networth">
+			<p class="label">Total { m.KindLabel } · { m.RangeLabel }</p>
+			<p class="figure">{ m.Total }</p>
+			<p class="breakdown">{ m.TotalNote }</p>
+		</section>
+		if len(m.Missing) > 0 {
+			<p class="notice warn">
+				No exchange rate on file for { joinComma(m.Missing) }. Those amounts are left out of the USD figures and shown in their own currency.
+			</p>
+		}
+		if m.Empty {
+			<p class="empty">Nothing in this range.</p>
+		} else {
+			<ul class="bars">
+				for _, b := range m.Bars {
+					@tagBar(b)
+				}
+				if m.Untagged != nil {
+					@tagBar(*m.Untagged)
+				}
+			</ul>
+			<p class="hint">A line with several tags counts toward each of them, so the bars add up to more than the total.</p>
+		}
+		<p><a href="/tags/manage">Rename, merge or delete tags &rarr;</a></p>
+	}
+}
+
+templ tagBar(b TagBar) {
+	<li class="bar-row" title={ b.Title }>
+		<a class="bar-label" href={ templ.SafeURL(b.Href) }>{ b.Tag }</a>
+		<span class="bar-value">{ b.Amount }</span>
+		<span class="bar-track" aria-hidden="true">
+			<span class="bar" style={ templ.SafeCSS(fmt.Sprintf("width:%d%%", b.Pct)) }></span>
+		</span>
+		if b.Detail != "" {
+			<small class="bar-detail">{ b.Detail }</small>
+		}
+	</li>
+}

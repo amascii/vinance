@@ -1,0 +1,197 @@
+package views
+
+templ EditorPage(e Editor) {
+	@Layout("Edit transaction · vinance") {
+		@EditorForm(e)
+	}
+}
+
+// RemainingBox is the live indicator; the preview endpoint re-renders it (and the Save button).
+templ RemainingBox(r Remaining) {
+	<span class={ "remaining", r.State }>{ r.Text }</span>
+}
+
+// RemainingUpdate is the preview endpoint's response: the indicator plus an out-of-band
+// Save button whose enabled state follows whether the lines balance.
+templ RemainingUpdate(r Remaining) {
+	@RemainingBox(r)
+	@SaveButton(r.Balanced, true)
+}
+
+templ SaveButton(balanced bool, oob bool) {
+	<button
+		id="save"
+		type="submit"
+		name="action"
+		value="save"
+		disabled?={ !balanced }
+		if oob {
+			hx-swap-oob="true"
+		}
+	>Save</button>
+}
+
+templ EditorForm(e Editor) {
+	<form
+		id="editor"
+		method="post"
+		action={ templ.SafeURL("/transactions/" + itoa(e.ID)) }
+		hx-post={ "/transactions/" + itoa(e.ID) }
+		hx-target="#editor"
+		hx-swap="outerHTML"
+	>
+		<input type="hidden" name="next" value={ e.Next }/>
+		<input type="hidden" name="currency" value={ e.Currency }/>
+		<p class="crumbs"><a href={ templ.SafeURL(nonEmpty(e.Next, "/transactions")) }>&larr; Back</a></p>
+		<h2>Edit transaction</h2>
+		if e.Meta != "" {
+			<p class="meta">{ e.Meta }</p>
+		}
+		if e.Imbalance {
+			<p class="notice warn">One line is in <strong>Imbalance</strong>. Change its account to <em>Expenses</em> (or another category) and add tags, then save.</p>
+		}
+		if e.Flash != "" {
+			<p class="flash" role="status">{ e.Flash }</p>
+		}
+		if len(e.Problems) > 0 {
+			<ul class="problems" role="alert">
+				for _, p := range e.Problems {
+					<li>{ p }</li>
+				}
+			</ul>
+		}
+		<div class="editor-head">
+			<input type="date" name="date" value={ e.Date } required aria-label="Date"/>
+			<input type="text" name="description" value={ e.Description } required autocomplete="off" placeholder="Description" aria-label="Description"/>
+			<textarea name="notes" rows="1" placeholder="Notes" aria-label="Notes">{ e.Notes }</textarea>
+		</div>
+		<details class="lines-hint"><summary>Lines in { e.Currency }: how the signs work</summary><p class="hint">Each amount's sign says which way money moves for that line's account: <strong>−</strong> leaving it, <strong>+</strong> arriving in it. Changing a line's account does not flip its sign. Lines must add up to zero.</p></details>
+		<ol
+			class="lines"
+			hx-post={ "/transactions/" + itoa(e.ID) + "/remaining" }
+			hx-trigger="input delay:200ms"
+			hx-include="#editor"
+			hx-target="#remaining"
+			hx-swap="innerHTML"
+			hx-sync="this:replace"
+		>
+			for i, row := range e.Rows {
+				@EditLine(e, i, row)
+			}
+		</ol>
+		<div class="actions">
+			<button type="submit" name="action" value="add" class="secondary outline add-line">+ Add line</button>
+			<div id="remaining" role="status" aria-live="polite">
+				@RemainingBox(e.Remaining)
+			</div>
+			@SaveButton(e.Remaining.Balanced, false)
+			<a href={ templ.SafeURL(nonEmpty(e.Next, "/transactions")) } role="button" class="secondary outline icon cancel" aria-label="Cancel" title="Cancel">&#10005;</a>
+			<button
+				type="submit"
+				formaction={ templ.SafeURL("/transactions/" + itoa(e.ID) + "/delete") }
+				hx-post={ "/transactions/" + itoa(e.ID) + "/delete" }
+				hx-confirm="Delete this transaction? This can't be undone."
+				class="secondary outline icon delete"
+				aria-label="Delete transaction"
+				title="Delete transaction"
+				formnovalidate
+			>
+				<svg viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14M10 11v6m4-6v6"></path></svg>
+			</button>
+		</div>
+	</form>
+}
+
+templ EditLine(e Editor, i int, row EditRow) {
+	<li class={ "line", templ.KV("warn", row.Warn) }>
+		<input type="hidden" name={ field(i, "rec") } value={ row.Reconciled }/>
+		<div class="line-main">
+			<select
+				name={ field(i, "account") }
+				aria-label={ "Account for line " + itoa(int64(i+1)) }
+				hx-post={ "/transactions/" + itoa(e.ID) }
+				hx-trigger="change"
+				hx-include="#editor"
+				hx-vals='{"action":"recalc"}'
+				hx-target="#editor"
+				hx-swap="outerHTML"
+			>
+				<optgroup label="Categories">
+					for _, a := range e.Categories {
+						<option value={ a.ID } selected?={ a.ID == row.Account }>{ a.Name }</option>
+					}
+				</optgroup>
+				<optgroup label="Accounts">
+					for _, a := range e.Accounts {
+						<option value={ a.ID } selected?={ a.ID == row.Account }>{ a.Name }</option>
+					}
+				</optgroup>
+			</select>
+			<input type="text" name={ field(i, "memo") } value={ row.Memo } placeholder="Item / memo" autofocus?={ e.FocusLast && i == len(e.Rows)-1 } aria-label={ "Memo for line " + itoa(int64(i+1)) } autocomplete="off"/>
+			<input
+				type="text"
+				name={ field(i, "tags") }
+				id={ "line-" + itoa(int64(i)) + "-tags" }
+				value={ row.Tags }
+				placeholder="#tags"
+				aria-label={ "Tags for line " + itoa(int64(i+1)) }
+				autocomplete="off"
+				autocapitalize="none"
+				spellcheck="false"
+				data-tag-input
+				hx-post="/quickadd/suggest/tags"
+				hx-trigger="input changed delay:150ms, focus"
+				hx-include="this"
+				hx-target={ "#line-" + itoa(int64(i)) + "-tag-suggestions" }
+				hx-swap="innerHTML"
+				hx-sync="this:replace"
+			/>
+			<input
+				type="text"
+				inputmode="decimal"
+				name={ field(i, "amount") }
+				value={ row.Amount }
+				class="amount-input"
+				aria-label={ "Amount for line " + itoa(int64(i+1)) }
+				autocomplete="off"
+			/>
+			if row.Builtin {
+				<select
+					name={ field(i, "currency") }
+					class="cur"
+					aria-label={ "Currency for line " + itoa(int64(i+1)) }
+					hx-post={ "/transactions/" + itoa(e.ID) }
+					hx-trigger="change"
+					hx-include="#editor"
+					hx-vals='{"action":"recalc"}'
+					hx-target="#editor"
+					hx-swap="outerHTML"
+				>
+					for _, c := range e.Currencies {
+						<option value={ c } selected?={ c == row.Currency }>{ c }</option>
+					}
+				</select>
+			} else {
+				<input type="hidden" name={ field(i, "currency") } value={ row.Currency }/>
+				<span class="cur-label">{ row.Currency }</span>
+			}
+		</div>
+		<div class="line-suggestions" id={ "line-" + itoa(int64(i)) + "-tag-suggestions" } data-tags-for={ "line-" + itoa(int64(i)) + "-tags" } aria-live="polite"></div>
+		if row.NeedsValue {
+			<div class="line-value">
+				<label>
+					Worth in { e.Currency }
+					<input type="text" inputmode="decimal" name={ field(i, "value") } value={ row.Value } autocomplete="off"/>
+				</label>
+			</div>
+		}
+		if row.Error != "" {
+			<p class="line-error" role="alert">{ row.Error }</p>
+		}
+		<div class="line-actions">
+			<button type="submit" name="action" value={ "up-" + itoa(int64(i)) } class="secondary outline" disabled?={ i == 0 } aria-label="Move line up" formnovalidate>↑</button>
+			<button type="submit" name="action" value={ "down-" + itoa(int64(i)) } class="secondary outline" disabled?={ i == len(e.Rows)-1 } aria-label="Move line down" formnovalidate>↓</button>
+			<button type="submit" name="action" value={ "remove-" + itoa(int64(i)) } class="secondary outline remove" aria-label="Remove line" title="Remove line" formnovalidate>✕</button>
+		</div>
+	</li>
+}

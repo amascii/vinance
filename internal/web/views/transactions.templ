@@ -1,0 +1,165 @@
+package views
+
+templ TransactionsPage(m TxnList) {
+	@Layout("Transactions · vinance") {
+		<h2>Transactions</h2>
+		if m.Flash != "" {
+			<p class="flash" role="status">{ m.Flash }</p>
+		}
+		if m.Entry != nil {
+			@ScopedPanel(*m.Entry)
+		}
+		if m.EntryNote != "" {
+			<p class="hint">{ m.EntryNote }</p>
+		}
+		@TxnFilters(m)
+		<div id="txn-results">
+			@TxnResults(m)
+		</div>
+	}
+}
+
+templ TxnFilters(m TxnList) {
+	<form
+		id="filters"
+		method="get"
+		action="/transactions"
+		hx-get="/transactions"
+		hx-target="#txn-results"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+		hx-trigger="input delay:300ms, change, submit"
+		hx-sync="this:replace"
+		hx-history="false"
+	>
+		<input type="search" name="q" value={ m.Form.Q } placeholder="Search description, notes, items" aria-label="Search"/>
+		<div class="filter-row">
+			<select name="account" aria-label="Account">
+				<option value="">All accounts</option>
+				for _, a := range m.Accounts {
+					<option value={ a.Slug } selected?={ a.Slug == m.Form.Account }>{ a.Name }</option>
+				}
+			</select>
+			<input type="text" name="tag" value={ m.Form.Tags } list="tag-options" placeholder="#tags" aria-label="Tags" autocomplete="off" autocapitalize="none"/>
+			<datalist id="tag-options">
+				for _, t := range m.TagOptions {
+					<option value={ t }></option>
+				}
+			</datalist>
+		</div>
+		<div class="filter-row">
+			<input type="date" name="from" value={ m.Form.From } aria-label="From date"/>
+			<input type="date" name="to" value={ m.Form.To } aria-label="To date"/>
+		</div>
+		<label class="inline">
+			<input type="checkbox" name="imbalance" value="1" checked?={ m.Form.Imbalance }/>
+			Needs fixing only
+		</label>
+		<label class="inline">
+			<input type="checkbox" name="untagged" value="1" checked?={ m.Form.Untagged }/>
+			Untagged spending only
+		</label>
+		<noscript><button type="submit">Filter</button></noscript>
+		<a href="/transactions" class="clear">Clear filters</a>
+	</form>
+}
+
+// TxnResults is the swap target for filter changes: the count, notices and the first page.
+templ TxnResults(m TxnList) {
+	for _, n := range m.Notices {
+		<p class="problems" role="alert">{ n }</p>
+	}
+	if m.AccountHeader != "" {
+		<p class="account-header">{ m.AccountHeader }</p>
+	}
+	if len(m.Items) > 0 {
+		@BulkBar(m)
+	}
+	<p class="count">{ Thousands(m.Count) } { plural(m.Count, "transaction", "transactions") }</p>
+	<ul id="txn-list" class="txns">
+		@TxnItems(m.Items, m.NextURL)
+	</ul>
+	if m.Count == 0 {
+		<p class="empty">Nothing matches these filters.</p>
+	}
+	if len(m.Totals) > 0 {
+		<p class="txn-total" id="txn-total">
+			<span>Total of { Thousands(m.Count) } { plural(m.Count, "transaction", "transactions") }</span>
+			for _, t := range m.Totals {
+				<strong class={ "amount", t.Direction } data-currency={ t.Currency }>{ t.Amount } <small>{ t.Currency }</small></strong>
+			}
+		</p>
+	}
+}
+
+// TxnItems renders list rows plus, when there is more, a sentinel that loads the next page
+// as soon as it scrolls into view and replaces itself with those rows.
+templ TxnItems(items []TxnRow, nextURL string) {
+	for _, r := range items {
+		@TxnItem(r)
+	}
+	if nextURL != "" {
+		<li class="more" hx-get={ nextURL } hx-trigger="revealed" hx-swap="outerHTML" hx-target="this">
+			<a href={ templ.SafeURL(nextURL) }>Load more</a>
+		</li>
+	}
+}
+
+// BulkBar appears once rows are ticked (app.js shows it). The row checkboxes belong to this form via form="bulk".
+// It is part of the swapped results, so changing the filter or search clears the selection.
+templ BulkBar(m TxnList) {
+	<form id="bulk" class="bulk-bar" method="post" action="/transactions/bulk" data-count={ itoa(int64(m.Count)) } hidden>
+		<input type="hidden" name="return" value={ m.FilterURL }/>
+		<input type="hidden" name="scope" value=""/>
+		<strong id="bulk-count">0 selected</strong>
+		<button type="button" id="bulk-all" class="link" hidden>Select all { Thousands(m.Count) } matching</button>
+		<select name="op" aria-label="Bulk action">
+			<option value="add">Add tag</option>
+			<option value="remove">Remove tag</option>
+			<option value="move">Move tag</option>
+		</select>
+		<input type="text" name="bulk_tag" list="tag-options" placeholder="#tag" aria-label="Tag" autocomplete="off" autocapitalize="none" spellcheck="false" required/>
+		<span class="only-move">&rarr;</span>
+		<input type="text" name="bulk_to" list="tag-options" placeholder="#new-tag" aria-label="Move to tag" autocomplete="off" autocapitalize="none" spellcheck="false" class="only-move"/>
+		<button type="submit">Review&hellip;</button>
+	</form>
+}
+
+templ BulkConfirmPage(c BulkConfirm) {
+	@Layout("Confirm tag change · vinance") {
+		<h2>Confirm tag change</h2>
+		<p class="bulk-summary">
+			switch c.Op {
+				case "add":
+					Add <span class="chip tag">#{ c.Tag }</span> to
+				case "remove":
+					Remove <span class="chip tag">#{ c.Tag }</span> from
+				default:
+					Move <span class="chip tag">#{ c.Tag }</span> &rarr; <span class="chip tag">#{ c.To }</span> on
+			}
+			<strong>{ Thousands(c.Transactions) } { plural(c.Transactions, "transaction", "transactions") }</strong>
+			({ Thousands(c.Lines) } { plural(c.Lines, "line", "lines") }).
+		</p>
+		if c.Op == "add" {
+			<p class="hint">The tag goes on every expense/income line of each transaction (not the account line).</p>
+		}
+		if c.All {
+			<p class="hint">Applies to every transaction matching the current filter.</p>
+		}
+		<form method="post" action="/transactions/bulk/apply" class="actions">
+			<input type="hidden" name="op" value={ c.Op }/>
+			<input type="hidden" name="bulk_tag" value={ c.Tag }/>
+			<input type="hidden" name="bulk_to" value={ c.To }/>
+			<input type="hidden" name="return" value={ c.Return }/>
+			if c.All {
+				<input type="hidden" name="scope" value="all"/>
+			} else {
+				for _, id := range c.IDs {
+					<input type="hidden" name="id" value={ itoa(id) }/>
+				}
+			}
+			<button type="submit" id="apply">Apply</button>
+			<a href={ templ.SafeURL(c.Return) } role="button" class="secondary outline">Cancel</a>
+		</form>
+	}
+}

@@ -1,0 +1,10 @@
+-- name: ListTags :many
+SELECT * FROM tags ORDER BY name;
+
+-- name: GetTagByName :one
+SELECT * FROM tags WHERE name = ?;
+
+-- name: EnsureTag :one
+INSERT INTO tags (name) VALUES (?)
+ON CONFLICT (name) DO UPDATE SET name = excluded.name
+RETURNING *;

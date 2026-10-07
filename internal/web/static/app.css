@@ -1,0 +1,328 @@
+/* vinance: small additions on top of Pico CSS. Mobile first. */
+/* desktop use: Pico caps the page at 700px on mid-width windows, which forces the one-line forms to wrap */
+header.container, main.container { max-width: 1200px; padding-inline: clamp(1rem, 3vw, 2.5rem); }
+header.container nav { padding-block: 0.5rem; flex-wrap: wrap; row-gap: 0; }
+header.container nav ul { flex-wrap: wrap; }
+@media (max-width: 30rem) {
+  header.container nav ul li { padding: 0.2rem 0.3rem; }
+  header.container nav ul li a { font-size: 0.85rem; padding: 0.2rem 0.3rem; }
+  header.container nav ul:last-child li:last-child { padding-right: 0; }
+}
+.brand { text-decoration: none; }
+
+
+
+.suggestions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+button.suggestion {
+  width: auto; margin: 0; padding: 0.25rem 0.6rem; font-size: 0.85rem;
+  --pico-form-element-spacing-vertical: 0.25rem;
+}
+button.suggestion small { margin-left: 0.4rem; opacity: 0.7; }
+
+.chip { display: inline-block; padding: 0 0.5rem; border-radius: 999px; font-size: 0.78rem; line-height: 1.5; background: var(--pico-muted-border-color); }
+.chip.tag { background: transparent; border: 1px solid var(--pico-muted-border-color); }
+.chip.warn { background: var(--pico-del-color); color: #fff; }
+
+.problems { color: var(--pico-del-color); margin: 0 0 0.75rem; padding-left: 1.1rem; }
+.flash { color: var(--pico-ins-color); margin: 0 0 0.75rem; }
+
+ul.txns { list-style: none; padding: 0; margin: 0; }
+ul.txns li { list-style: none; }
+li.txn { padding: 0.55rem 0; border-bottom: 1px solid var(--pico-muted-border-color); margin: 0; }
+li.txn .line1 { display: flex; justify-content: space-between; gap: 1rem; }
+li.txn .desc { overflow-wrap: anywhere; }
+li.txn .amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+li.txn .amount-col { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
+li.txn .running { color: var(--pico-muted-color); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 0.75rem; }
+p.account-header { margin: 0.25rem 0; font-size: 1.05rem; font-weight: 600; }
+li.txn.dir-out .amount { color: var(--pico-del-color); }
+li.txn.dir-in .amount { color: var(--pico-ins-color); }
+li.txn .line2 { display: flex; flex-wrap: wrap; gap: 0.3rem 0.4rem; align-items: center; font-size: 0.8rem; color: var(--pico-muted-color); }
+
+/* transactions page */
+#filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; font-size: 0.9rem;
+  --pico-form-element-spacing-vertical: 0.25rem; --pico-form-element-spacing-horizontal: 0.6rem; }
+#filters input, #filters select { margin: 0; font-size: 0.9rem; width: auto; }
+#filters input[type=search] { flex: 1 1 14rem; min-width: 10rem; }
+#filters select { padding-right: 1.8rem; background-position: right 0.5rem center; max-width: 11rem; }
+#filters input[name=tag] { width: 9rem; }
+#filters input[type=date] { width: 8.6rem; }
+.filter-row { display: contents; }
+label.inline { display: flex; align-items: center; gap: 0.35rem; margin: 0; font-size: 0.85rem; white-space: nowrap; }
+label.inline input[type=checkbox] { margin: 0; width: 1rem; height: 1rem; }
+main.container > h2 { margin-bottom: 0.5rem; font-size: 1.5rem; }
+a.clear { font-size: 0.85rem; }
+p.txn-total { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; align-items: baseline; margin: 0.5rem 0 0; padding: 0.5rem 0.25rem; background: var(--pico-background-color); border-top: 1px solid var(--pico-muted-border-color); }
+p.txn-total span { color: var(--pico-muted-color); font-size: 0.85rem; margin-right: auto; }
+p.txn-total strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+p.txn-total .out { color: var(--pico-del-color); }
+p.txn-total .in { color: var(--pico-ins-color); }
+p.txn-total small { font-weight: 400; color: var(--pico-muted-color); }
+p.count { color: var(--pico-muted-color); font-size: 0.85rem; margin-bottom: 0.25rem; }
+p.empty { color: var(--pico-muted-color); }
+li.more { list-style: none; text-align: center; padding: 1rem 0; }
+
+li.txn details { margin: 0; }
+li.txn summary { padding: 0; border: 0; cursor: pointer; list-style: none; }
+li.txn summary::after { display: none; }
+li.txn summary::-webkit-details-marker { display: none; }
+ul.splits { list-style: none; margin: 0.4rem 0 0.2rem; padding: 0 0 0 0.75rem; border-left: 2px solid var(--pico-muted-border-color); }
+ul.splits li.split { display: flex; justify-content: space-between; gap: 1rem; padding: 0.15rem 0; margin: 0; list-style: none; font-size: 0.85rem; }
+li.split .split-main { display: flex; flex-wrap: wrap; gap: 0.25rem 0.4rem; align-items: baseline; min-width: 0; }
+li.split .memo { overflow-wrap: anywhere; }
+li.split .amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* transaction editor: header on one line, one row per split line */
+.crumbs { margin-bottom: 0; font-size: 0.9rem; }
+.meta { color: var(--pico-muted-color); font-size: 0.8rem; margin-top: -0.25rem; margin-bottom: 0.4rem; }
+.hint { color: var(--pico-muted-color); font-size: 0.85rem; }
+.notice.warn { border-left: 3px solid var(--pico-del-color); padding-left: 0.75rem; }
+#editor { font-size: 0.9rem; --pico-form-element-spacing-vertical: 0.25rem; --pico-form-element-spacing-horizontal: 0.6rem; }
+#editor h2 { font-size: 1.5rem; margin-bottom: 0.4rem; }
+#editor input, #editor select, #editor textarea { margin: 0; font-size: 0.9rem; }
+#editor select { padding-right: 1.8rem; background-position: right 0.5rem center; }
+.editor-head { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; }
+.editor-head input[type=date] { width: 8.6rem; }
+.editor-head input[name=description] { flex: 2 1 14rem; min-width: 10rem; }
+.editor-head textarea { flex: 1 1 10rem; min-width: 8rem; resize: vertical; field-sizing: content; min-height: 0; }
+.lines-hint { margin: 0 0 0.3rem; }
+.lines-hint summary { font-size: 0.8rem; color: var(--pico-muted-color); padding: 0; border: 0; cursor: pointer; list-style: none; }
+.lines-hint summary::after { display: none; }
+.lines-hint p { margin: 0.2rem 0 0.3rem; font-size: 0.8rem; }
+ol.lines { list-style: none; padding: 0; margin: 0 0 0.5rem; }
+li.line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.4rem; padding: 0.25rem 0; margin: 0; border-bottom: 1px solid var(--pico-muted-border-color); list-style: none; }
+li.line.warn { border-left: 3px solid var(--pico-del-color); padding-left: 0.4rem; }
+.line-main { display: contents; }
+li.line select:first-of-type { order: 1; width: 11rem; flex: none; }
+li.line input[name$="-memo"] { order: 2; flex: 2 1 10rem; min-width: 7rem; width: auto; }
+li.line input[name$="-tags"] { order: 3; flex: 1 1 8rem; min-width: 6rem; width: auto; }
+li.line .amount-input { order: 4; width: 7rem; flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+li.line .cur, li.line .cur-label { order: 5; }
+li.line .cur { width: 5.5rem; flex: none; }
+.cur-label { font-size: 0.8rem; color: var(--pico-muted-color); width: 2.2rem; }
+li.line .line-actions { order: 6; display: flex; gap: 0.2rem; margin-left: auto; }
+li.line .line-suggestions { order: 7; flex-basis: 100%; }
+li.line .line-suggestions:empty { display: none; }
+li.line .line-suggestions .suggestions { margin-top: 0; }
+li.line .line-value { order: 7; flex-basis: 100%; }
+li.line .line-value label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+li.line .line-value input { width: 8rem; }
+li.line .line-error { order: 8; flex-basis: 100%; }
+.line-error { color: var(--pico-del-color); font-size: 0.8rem; margin: 0; }
+.line-actions button { width: auto; margin: 0; padding: 0.2rem 0.5rem; font-size: 0.8rem; line-height: 1.2; }
+#remaining { font-size: 0.95rem; }
+.remaining.ok { color: var(--pico-ins-color); }
+.remaining.under, .remaining.over { color: var(--pico-del-color); }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.actions > * { width: auto; margin: 0; }
+#editor .actions button, #editor .actions [role=button] { padding: 0.35rem 0.9rem; font-size: 0.9rem; }
+.actions #remaining { margin-right: auto; }
+#editor .actions #save { flex: 1 1 12rem; max-width: 22rem; font-weight: 600; }
+#editor .actions .icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 2.6rem; padding: 0.35rem 0; }
+#editor .actions .delete:hover, #editor .actions .delete:focus-visible { color: var(--pico-del-color); border-color: var(--pico-del-color); }
+@media (max-width: 30rem) {
+  li.line select:first-of-type { width: 100%; flex: 1 1 100%; }
+  li.line .amount-input { flex: 1 1 6rem; }
+}
+a.edit-link { color: inherit; text-decoration: none; }
+
+/* balances */
+.networth { margin: 0.5rem 0 1rem; }
+.networth .label { margin: 0; color: var(--pico-muted-color); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.networth .figure { margin: 0; font-size: 2.2rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.networth .figure.neg { color: var(--pico-del-color); }
+.networth .breakdown { margin: 0; color: var(--pico-muted-color); font-size: 0.9rem; }
+ul.balances { list-style: none; padding: 0; margin: 0 0 1rem; }
+ul.balances li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.55rem 0; margin: 0; border-bottom: 1px solid var(--pico-muted-border-color); list-style: none; }
+ul.balances li.zero .balance, ul.balances li.zero .name { color: var(--pico-muted-color); }
+ul.balances a.name { text-decoration: none; color: inherit; overflow-wrap: anywhere; }
+ul.balances .amounts { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+ul.balances .usd { color: var(--pico-muted-color); }
+ul.balances .usd.warn { color: var(--pico-del-color); }
+
+/* series color for bars: one hue, light/dark steps chosen for contrast against each surface */
+:root { --series-1: #2a78d6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --series-1: #3987e5; } }
+:root[data-theme="dark"] { --series-1: #3987e5; }
+
+/* tag report */
+nav.choices { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 0.4rem; margin-bottom: 0.6rem; }
+nav.choices a { padding: 0.15rem 0.7rem; border: 1px solid var(--pico-muted-border-color); border-radius: 999px; font-size: 0.85rem; text-decoration: none; }
+nav.choices a.active { background: var(--pico-primary-background); color: var(--pico-primary-inverse); border-color: transparent; }
+.range-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem; align-items: start; margin-bottom: 0.5rem; }
+.range-form input, .range-form button { margin: 0; width: 100%; min-width: 0; }
+.range-form button { grid-column: 1 / -1; }
+ul.bars { list-style: none; padding: 0; margin: 0 0 0.75rem; }
+li.bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 1rem; padding: 0.5rem 0; margin: 0; list-style: none; border-bottom: 1px solid var(--pico-muted-border-color); }
+.bar-label { text-decoration: none; color: inherit; overflow-wrap: anywhere; }
+.bar-value { font-variant-numeric: tabular-nums; text-align: right; }
+.bar-track { grid-column: 1 / -1; height: 10px; margin-top: 0.3rem; background: color-mix(in srgb, var(--pico-muted-border-color) 55%, transparent); }
+.bar { display: block; height: 100%; min-width: 2px; background: var(--series-1); border-radius: 0 4px 4px 0; }
+li.bar-row:hover .bar { filter: brightness(1.12); }
+.bar-detail { grid-column: 1 / -1; color: var(--pico-muted-color); margin-top: 0.15rem; }
+
+/* tag management */
+.manage-filter { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.5rem; align-items: start; }
+.manage-filter input, .manage-filter select, .manage-filter button { margin: 0; width: auto; }
+.manage-filter input[type=search] { width: 100%; }
+ul.tag-list { list-style: none; padding: 0; margin: 0; }
+ul.tag-list > li { padding: 0.5rem 0; margin: 0; list-style: none; border-bottom: 1px solid var(--pico-muted-border-color); }
+.tag-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.tag-name { text-decoration: none; overflow-wrap: anywhere; }
+.tag-uses { color: var(--pico-muted-color); font-size: 0.85rem; white-space: nowrap; }
+ul.tag-list details { margin: 0.25rem 0 0; }
+ul.tag-list summary { font-size: 0.8rem; color: var(--pico-muted-color); padding: 0; border: 0; cursor: pointer; }
+ul.tag-list summary::after { display: none; }
+.rename-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin: 0.4rem 0; }
+.rename-form input, .rename-form button { margin: 0; width: auto; }
+.rename-form input { width: 100%; }
+.merge-confirm .actions { margin-top: 0.5rem; }
+
+/* account management */
+details.add-account { margin-bottom: 1rem; }
+details.add-account > summary { width: auto; display: inline-block; }
+.account-form { margin: 0.5rem 0; }
+.account-form label small { font-weight: normal; color: var(--pico-muted-color); }
+ul.account-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+ul.account-list > li { padding: 0.6rem 0; margin: 0; list-style: none; border-bottom: 1px solid var(--pico-muted-border-color); }
+.account-meta { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.2rem 0; }
+ul.account-list details { margin: 0.3rem 0 0; }
+ul.account-list summary { font-size: 0.8rem; color: var(--pico-muted-color); padding: 0; border: 0; cursor: pointer; }
+ul.account-list summary::after { display: none; }
+/* the edit pencil sits at the right of the row; the form opens beneath it */
+ul.account-list > li { position: relative; }
+ul.account-list > li .tag-head { padding-right: 2.2rem; }
+ul.account-list summary { position: absolute; top: 0.45rem; right: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.9rem; margin: 0; border-radius: var(--pico-border-radius); }
+ul.account-list summary:hover, ul.account-list summary:focus-visible { color: var(--pico-contrast); background: var(--pico-secondary-focus); }
+ul.account-list .actions form { margin: 0; }
+/* the edit form: Name, Type, Currency and Save on one compact line, wrapping on narrow screens */
+ul.account-list .account-form { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; align-items: flex-end; font-size: 0.9rem; --pico-form-element-spacing-vertical: 0.25rem; --pico-form-element-spacing-horizontal: 0.6rem; }
+ul.account-list .account-form label { margin: 0; font-size: 0.8rem; color: var(--pico-muted-color); }
+ul.account-list .account-form > label { flex: 1 1 12rem; }
+ul.account-list .account-form input, ul.account-list .account-form select { margin: 0.1rem 0 0; font-size: 0.9rem; height: auto; line-height: 1.3; }
+ul.account-list .account-form select { padding-right: 1.8rem; background-position: right 0.5rem center; }
+ul.account-list .account-form .filter-row label { flex: none; }
+ul.account-list .account-form .filter-row label:has(select) { width: 8rem; }
+ul.account-list .account-form .filter-row label:has(input) { width: 5rem; }
+ul.account-list .account-form .hint { order: 2; flex: 1 1 100%; margin: 0; font-size: 0.8rem; }
+ul.account-list .account-form button { order: 1; width: auto; margin: 0; padding: 0.25rem 1.1rem; font-size: 0.9rem; line-height: 1.3; }
+
+.desc-suggestions { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.5rem; }
+button.desc-suggestion {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; width: 100%; margin: 0;
+  padding: 0.4rem 0.7rem; text-align: left; font-size: 0.95rem;
+  --pico-form-element-spacing-vertical: 0.4rem;
+}
+button.desc-suggestion {
+  background: transparent; color: var(--pico-contrast); border: 1px solid var(--pico-muted-border-color); box-shadow: none;
+}
+button.desc-suggestion .d-main { font-weight: 600; }
+button.desc-suggestion .d-detail { color: var(--pico-muted-color); text-align: right; }
+button.desc-suggestion:hover, button.desc-suggestion:focus-visible {
+  background: color-mix(in srgb, var(--series-1) 12%, transparent); border-color: var(--series-1); color: var(--pico-contrast);
+}
+button.desc-suggestion.active { /* the row Enter/Tab will accept */
+  background: color-mix(in srgb, var(--series-1) 16%, transparent); border-color: var(--series-1); color: var(--pico-contrast);
+  outline: 2px solid var(--series-1); outline-offset: -2px;
+}
+.desc-suggestions .keys { margin: 0.1rem 0 0; font-size: 0.75rem; }
+@media (max-width: 30rem) { .desc-suggestions .keys { display: none; } button.desc-suggestion { flex-direction: column; gap: 0.1rem; } button.desc-suggestion .d-detail { text-align: left; } }
+
+/* recurring */
+ul.due-list, ul.rule-list { list-style: none; padding: 0; margin: 0 0 1rem; }
+ul.due-list > li, ul.rule-list > li { padding: 0.6rem 0; margin: 0; list-style: none; border-bottom: 1px solid var(--pico-muted-border-color); }
+ul.due-list .actions { margin-top: 0.4rem; }
+ul.due-list .actions form, ul.rule-list .actions form { margin: 0; }
+ul.rule-list > li.paused { opacity: 0.6; }
+ul.rule-list details { margin: 0.3rem 0 0; }
+ul.rule-list summary { font-size: 0.8rem; color: var(--pico-muted-color); padding: 0; border: 0; cursor: pointer; }
+ul.rule-list summary::after { display: none; }
+.due-banner a { text-decoration: none; }
+
+/* budgets: the meter fill carries severity (accent -> warning -> danger); the track is a lighter step */
+:root { --warn-1: #b7791f; --over-1: #c0392b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --warn-1: #e0a030; --over-1: #e5584d; } }
+:root[data-theme="dark"] { --warn-1: #e0a030; --over-1: #e5584d; }
+nav.month-nav { display: flex; justify-content: center; align-items: center; gap: 1.25rem; margin-bottom: 0.75rem; }
+nav.month-nav a { text-decoration: none; font-size: 1.2rem; padding: 0 0.5rem; }
+ul.budgets { list-style: none; padding: 0; margin: 0 0 0.75rem; }
+li.budget { padding: 0.65rem 0; margin: 0; list-style: none; border-bottom: 1px solid var(--pico-muted-border-color); }
+.bar-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.bar-head .bar-value small { color: var(--pico-muted-color); }
+.meter { position: relative; height: 10px; margin: 0.35rem 0; background: color-mix(in srgb, var(--series-1) 14%, transparent); }
+.meter-fill { display: block; height: 100%; min-width: 2px; background: var(--series-1); border-radius: 0 4px 4px 0; }
+li.state-warn .meter { background: color-mix(in srgb, var(--warn-1) 16%, transparent); }
+li.state-warn .meter-fill { background: var(--warn-1); }
+li.state-over .meter { background: color-mix(in srgb, var(--over-1) 16%, transparent); }
+li.state-over .meter-fill { background: var(--over-1); }
+.meter-pace { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--pico-color); opacity: 0.55; }
+.meter-status { margin: 0; font-size: 0.85rem; }
+.meter-status small { color: var(--pico-muted-color); }
+li.state-over .meter-status { color: var(--over-1); }
+li.state-warn .meter-status { color: var(--warn-1); }
+.state-icon { display: inline-block; width: 1.1em; text-align: center; font-weight: 700; }
+li.budget details { margin: 0.3rem 0 0; }
+li.budget summary { font-size: 0.8rem; color: var(--pico-muted-color); padding: 0; border: 0; cursor: pointer; }
+li.budget summary::after { display: none; }
+li.budget details form { margin: 0.3rem 0; }
+
+/* a visual "done" tick for working through accounts one by one; nothing is saved, a reload resets it */
+.acct-left { display: flex; align-items: baseline; gap: 0.6rem; min-width: 0; }
+ul.balances input.tick { flex: none; width: 1.15rem; height: 1.15rem; margin: 0; align-self: center; cursor: pointer; }
+ul.balances li:has(input.tick:checked) { opacity: 0.45; }
+ul.balances li:has(input.tick:checked) a.name { text-decoration: line-through; }
+
+/* Pico sizes inputs from 1rem * line-height, ignoring our smaller font and padding: compact forms reset the height */
+.entry-form input:not([type=checkbox], [type=radio]), .entry-form select, .entry-form textarea,
+#filters input:not([type=checkbox], [type=radio]), #filters select,
+#editor input:not([type=checkbox], [type=radio]), #editor select, #editor textarea { height: auto; line-height: 1.3; }
+
+/* the entry form: one compact line on a desktop, wrapping on narrow screens */
+.scoped-entry { margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
+.entry-form { margin-bottom: 0.5rem; --pico-form-element-spacing-vertical: 0.25rem; --pico-form-element-spacing-horizontal: 0.6rem; font-size: 0.9rem; }
+.entry-form .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.entry-form .entry-line { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+.entry-form .field { display: block; margin: 0; position: relative; }
+.entry-form input, .entry-form select, .entry-form button { margin: 0; font-size: 0.9rem; }
+.entry-form select { width: auto; padding-right: 1.8rem; background-position: right 0.5rem center; }
+.entry-form input[type=date] { width: 7.8rem; }
+.entry-form .kind-field select { width: 5.5rem; }
+.entry-form .account-field select { width: 7.2rem; max-width: 100%; }
+.entry-form .direction select { width: 11rem; }
+.entry-form .desc-field { flex: 1 1 12rem; min-width: 8rem; }
+.entry-form .desc-field input, .entry-form .tags-field input, .entry-form .amount-field input { width: 100%; }
+.entry-form .amount-field { flex: 0 0 7rem; }
+.entry-form .amount-field input { text-align: right; font-variant-numeric: tabular-nums; }
+.entry-form .tags-field { flex: 0 1 14rem; min-width: 8rem; }
+.entry-form .date-row { display: flex; gap: 0.2rem; align-items: center; }
+.entry-form .date-row input { cursor: pointer; }
+.entry-form button.add { width: 2.6rem; flex: none; padding: 0.25rem 0; font-size: 1.3rem; font-weight: 600; line-height: 1.3; }
+.entry-form .entry-line::after { content: none; }
+.entry-form .arrow { color: var(--pico-muted-color); }
+.entry-form .entry-meta { display: flex; flex-wrap: wrap; gap: 0 0.75rem; margin: 0.25rem 0 0; min-height: 1.2em; font-size: 0.8rem; color: var(--pico-muted-color); }
+.entry-form .entry-meta .flash, .entry-form .entry-meta .hint { margin: 0; font-size: 0.8rem; }
+.entry-form .problems { margin: 0 0 0.4rem; }
+#qa-desc-suggestions, #qa-tag-suggestions { margin-bottom: 0.2rem; }
+.scoped-entry .entry-form { margin-bottom: 0; }
+
+/* Transfer-only parts show only while Transfer is selected (kept last so nothing above overrides it) */
+.entry-form .only-transfer, .entry-form .field .lbl-transfer { display: none; }
+.entry-form:has(select[name=kind]) .only-transfer { display: none; }
+.entry-form:has(select[name=kind] option[value=transfer]:checked) .only-transfer { display: block; }
+.entry-form:has(select[name=kind] option[value=transfer]:checked) .field .lbl-plain { display: none; }
+.entry-form:has(select[name=kind] option[value=transfer]:checked) .field .lbl-transfer { display: inline; }
+
+/* bulk tag editing */
+li.txn.pickable { position: relative; padding-left: 1.9rem; }
+li.txn .pick { position: absolute; left: 0.2rem; top: 0.75rem; width: 1.05rem; height: 1.05rem; margin: 0; cursor: pointer; }
+li.txn:has(.pick:checked) { background: color-mix(in srgb, var(--series-1) 9%, transparent); }
+.bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.5rem; margin: 0 0 0.5rem; padding: 0.4rem 0.6rem; border: 1px solid var(--series-1); border-radius: var(--pico-border-radius); font-size: 0.9rem; --pico-form-element-spacing-vertical: 0.25rem; --pico-form-element-spacing-horizontal: 0.6rem; }
+.bulk-bar[hidden] { display: none; }
+.bulk-bar input, .bulk-bar select, .bulk-bar button { margin: 0; width: auto; font-size: 0.9rem; height: auto; line-height: 1.3; }
+.bulk-bar select { padding-right: 1.8rem; background-position: right 0.5rem center; }
+.bulk-bar input[type=text] { width: 9rem; }
+.bulk-bar button[type=submit] { padding: 0.25rem 0.9rem; }
+.bulk-bar button.link { background: none; border: 0; box-shadow: none; padding: 0; color: var(--pico-primary); text-decoration: underline; cursor: pointer; }
+.bulk-bar .only-move { display: none; }
+.bulk-bar:has(select[name=op] option[value=move]:checked) .only-move { display: inline-block; }
+.bulk-summary { font-size: 1.1rem; }
