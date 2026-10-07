@@ -4,8 +4,8 @@
 
 ## Working rules
 
-- **Trunk-based git:** commit small, working increments directly to `main`. Remote `origin` is github.com/amascii/vinance (private for now); push `main` once the build and tests pass.
-  `go build ./... && go test ./...` must pass before each commit.
+- **Branch + PR, never straight to `main`:** make a new branch, commit small working increments there, push the branch and open a PR (`gh pr create`). The user approves and merges; never merge it yourself and never push, amend or force-push `main`.
+  Remote `origin` is github.com/amascii/vinance (**public**). `go build ./... && go test ./...` must pass before each commit.
 - After each task, tick it in `PROJECT.md` → Tasks and add a dated line to → Log **in the same commit**.
 - If you make or change a design decision, record it under `PROJECT.md` → Decisions. If you're unsure and the
   choice is the user's to make, ask instead of guessing.

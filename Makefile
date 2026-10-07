@@ -1,4 +1,4 @@
-.PHONY: generate build run test e2e e2e-install lint tidy
+.PHONY: generate build run test e2e e2e-install screenshots lint tidy
 
 generate:
 	go tool templ generate
@@ -18,6 +18,10 @@ e2e-install:
 
 e2e: generate
 	go test -tags e2e ./e2e/...
+
+# Regenerates docs/screenshots from synthetic demo data (never touches data/). Needs make e2e-install once.
+screenshots: generate
+	go run ./cmd/screenshots
 
 lint:
 	go vet ./...
