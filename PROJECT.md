@@ -509,3 +509,4 @@ Nothing is blocked. These are choices I made on your behalf; each is easy to cha
 - **2026-10-07** — Fixtures and docs: replaced real institution and fund names with fictitious ones of the same shape (e.g. the card account is now "Brisk", the bank "Wharf Bank"), keeping slug, prefix and ordering behaviour.
 - **2026-10-07** — Go module renamed to `github.com/amascii/vinance` to match the GitHub account; commit author email set to the GitHub noreply address.
 - **2026-10-07** — First push: private GitHub repo `amascii/vinance`. Final pre-publication pass: generalised the category-tree and subscription examples; CLAUDE.md now documents the remote.
+- **2026-10-07** — Added an MIT `LICENSE` (copyright holder: the GitHub handle).
