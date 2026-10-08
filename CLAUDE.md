@@ -15,6 +15,7 @@
   Tests use small synthetic fixtures.
 - Prefer standard ecosystem libraries (chi, templ, sqlc, goose, testify) over hand-rolled code.
 - Every task ships with tests: unit for logic, HTTP feature tests (httptest + goquery) for handlers, and a playwright E2E journey for browser-only UI behavior. See PROJECT.md → Testing.
+- **UI changes update the docs in the same PR:** run `make screenshots` and commit any changed `docs/screenshots/*.png`, and update the README feature text and `PROJECT.md` (Pages and routes, Quick-add form, etc.) wherever the change shows.
 - Generated code (`*_templ.go`, sqlc output) is committed. Run `make generate` after editing `.templ` or query files.
 
 ## Hard-won gotchas (each one cost a debugging session)
