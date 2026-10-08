@@ -151,3 +151,17 @@ func TestTransactionsTotalCoversWholeResultSet(t *testing.T) {
 	require.NoError(t, expect.Locator(page.Locator("p.count")).ToHaveText("10 transactions"))
 	require.NoError(t, expect.Locator(total).ToContainText("-$17.45"))
 }
+
+func TestTransactionsGroupedByDay(t *testing.T) {
+	page := newPage(t)
+	_, err := page.Goto(seed120(t) + "/transactions")
+	require.NoError(t, err)
+
+	days := page.Locator("#txn-list li.day")
+	require.NoError(t, expect.Locator(days).ToHaveCount(10)) // 5 rows a day, 50 rows loaded
+	require.NoError(t, expect.Locator(days.First()).ToHaveText("August 24, 2026"))
+	require.NoError(t, expect.Locator(page.Locator("#txn-list li.txn .date").First()).ToBeHidden())
+
+	scrollToBottom(t, page)
+	require.NoError(t, expect.Locator(days).ToHaveCount(20))
+}

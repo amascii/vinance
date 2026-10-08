@@ -11,3 +11,9 @@ func TestThousands(t *testing.T) {
 		assert.Equal(t, want, Thousands(in))
 	}
 }
+
+func TestDayHeading(t *testing.T) {
+	assert.Equal(t, "October 5, 2026", DayHeading("2026-10-05"))
+	assert.Equal(t, "January 1, 2027", DayHeading("2027-01-01"))
+	assert.Equal(t, "garbage", DayHeading("garbage"))
+}
