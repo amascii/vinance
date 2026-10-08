@@ -195,11 +195,13 @@ POSTs are protected by `http.CrossOriginProtection`; every state-changing form a
 
 ```
 cmd/vinance/main.go          subcommands: serve (default), migrate
+cmd/screenshots/main.go      regenerates docs/screenshots from demo data (`make screenshots`)
 internal/config              env config
 internal/logging             slog JSON logger
 internal/db                  Open (SQLite pragmas), Migrate (embedded goose migrations)
 internal/db/gen             sqlc generated code
 internal/db/migrations/      0001_init, 0002_description_index, 0003_recurring, 0004_budgets
+internal/demo                synthetic demo ledger (README screenshots; never real data)
 internal/db/queries/         sqlc query files (accounts, tags, transactions, suggest, reports)
 internal/ledger              money + currency conversion + rates, slugs, validation, Service (create/update/delete/get/list/count,
                              tags, accounts, balances, tag report, LastLike), Transaction.Summary
@@ -257,6 +259,7 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
       or only matching ones (decided, see Decision 10: add → all category lines, remove/move → only lines that have the tag); selection is cleared on any filter/search/load-more change; one DB transaction for the whole change, confirm step, no undo.
       Tests: unit for the ledger bulk operation (add/remove/move, idempotent when the tag is already there, tags created on demand), feature test for the endpoint, e2e journey (tick 2 of 3 rows, add a tag, only those two change; select-all-matching).
 - [x] **Filtered total:** net of the matching transactions (signed, per currency) at the bottom of the list whenever a filter is active; see Decision 11. Tests: ledger unit, feature, e2e (spans pages, updates live).
+- [x] **README with screenshots** from synthetic demo data (`internal/demo`, `cmd/screenshots`, `make screenshots`), MIT license, PR-only workflow
 
 ## Log
 
@@ -510,3 +513,4 @@ Nothing is blocked. These are choices I made on your behalf; each is easy to cha
 - **2026-10-07** — Go module renamed to `github.com/amascii/vinance` to match the GitHub account; commit author email set to the GitHub noreply address.
 - **2026-10-07** — First push: private GitHub repo `amascii/vinance`. Final pre-publication pass: generalised the category-tree and subscription examples; CLAUDE.md now documents the remote.
 - **2026-10-07** — Added an MIT `LICENSE` (copyright holder: the GitHub handle).
+- **2026-10-07** — README with screenshots. `internal/demo` seeds a deterministic synthetic ledger (4 accounts, ~140 transactions, a split receipt, a peso trip, one imbalance, 5 budgets, 4 recurring rules) into a *temp* DB; `cmd/screenshots` serves the app against it with a fixed clock (2026-09-24) and captures 7 pages with Playwright into `docs/screenshots`. `data/vinance.db` is never opened (checked: size and mtime unchanged). Workflow change: changes now go through a branch + PR, not straight to `main`.
