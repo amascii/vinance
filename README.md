@@ -1,5 +1,7 @@
 # vinance
 
+[![CI](https://github.com/amascii/vinance/actions/workflows/ci.yml/badge.svg)](https://github.com/amascii/vinance/actions/workflows/ci.yml)
+
 A simple, fast personal finance tracker for one person: a lighter alternative to GnuCash that runs on your own machine.
 Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx](https://htmx.org), with SQLite for storage.
 

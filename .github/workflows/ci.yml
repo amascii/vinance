@@ -1,0 +1,97 @@
+name: CI
+
+# Runs on every pull request (and on main after a merge). A cheap first job decides whether anything that
+# can affect the build or the UI changed; docs-only changes skip the real jobs. Skipped jobs count as
+# passing for branch protection, so the checks can be required without blocking docs-only PRs.
+# (A workflow-level `paths:` filter would leave required checks "pending" forever, so it is not used.)
+# Standard runners are free for public repos.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: detect relevant changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          pattern='\.(go|templ|sql)$|^(go\.mod|go\.sum|sqlc\.yaml|Makefile)$|^internal/web/static/|^\.github/workflows/'
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE" 2>/dev/null; then
+            echo "No usable base commit; running everything."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE" HEAD)
+          echo "Changed files:"; echo "$files"
+          if echo "$files" | grep -Eq "$pattern"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only docs/other files changed; skipping the test jobs."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    name: build, vet, unit + feature tests
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # Generated code (*_templ.go, sqlc output) is committed; fail if it is stale.
+      - name: Generated code is up to date
+        run: |
+          make generate
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Generated code is out of date. Run 'make generate' and commit the result."
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+
+  e2e:
+    name: browser journeys (Playwright)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('go.mod') }}
+
+      - name: Install Chromium
+        run: go run github.com/mxschmitt/playwright-go/cmd/playwright install --with-deps chromium
+
+      - run: go test -tags e2e ./e2e/...
