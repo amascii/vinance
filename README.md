@@ -47,6 +47,7 @@ You need Go (see `go.mod` for the version). There is nothing else to install: SQ
 git clone https://github.com/amascii/vinance.git
 cd vinance
 make run          # http://127.0.0.1:8080
+make run-lan      # same, but reachable from your phone/other computers on the same Wi-Fi (http://<your-lan-ip>:8080)
 ```
 
 The database is created and migrated on first start at `./data/vinance.db`. `data/` is gitignored, so your numbers never end up in the repo.

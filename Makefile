@@ -1,4 +1,4 @@
-.PHONY: generate build run test e2e e2e-install screenshots lint tidy
+.PHONY: generate build run run-lan test e2e e2e-install screenshots lint tidy
 
 generate:
 	go tool templ generate
@@ -9,6 +9,10 @@ build: generate
 
 run: generate
 	go run ./cmd/vinance serve
+
+# Listens on all interfaces so phones/other computers on the same network can reach it. There is no login: trusted networks only.
+run-lan: generate
+	VINANCE_ADDR=0.0.0.0:8080 go run ./cmd/vinance serve
 
 test: generate
 	go test ./...

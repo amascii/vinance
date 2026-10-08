@@ -171,6 +171,7 @@ The feature layer is the main workhorse because most UI behavior is server-rende
 
 ```
 make run                                  # http://127.0.0.1:8080, DB at ./data/vinance.db (auto-migrated)
+make run-lan                              # same, listening on 0.0.0.0:8080 (phone/other computers on the LAN; no login!)
 make test                                 # unit + HTTP feature tests (fast)
 make e2e-install && make e2e              # one-time browser setup, then Playwright journeys
 make generate                             # after editing *.templ or internal/db/queries/*.sql (generated code is committed)
@@ -262,6 +263,7 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
       Tests: unit for the ledger bulk operation (add/remove/move, idempotent when the tag is already there, tags created on demand), feature test for the endpoint, e2e journey (tick 2 of 3 rows, add a tag, only those two change; select-all-matching).
 - [x] **Filtered total:** net of the matching transactions (signed, per currency) at the bottom of the list whenever a filter is active; see Decision 11. Tests: ledger unit, feature, e2e (spans pages, updates live).
 - [x] **README with screenshots** from synthetic demo data (`internal/demo`, `cmd/screenshots`, `make screenshots`), MIT license, PR-only workflow
+- [x] **`make run-lan`:** run bound to `0.0.0.0:8080` for access from other devices on the same network
 
 ## Log
 
@@ -438,6 +440,8 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
   accounts are refused with a clear message. `quickadd.ScopedLine` rewrites the *typed text* (drops the @other, strips the +) so mistakes like a bad date still surface. History autocomplete on a register fills the other
   account for past transfers (with a `+` only when the past transfer went the unusual way). Entering from the home page is unchanged (`@from @to`). Tests: unit (direction table, resolvable lines, pass-through of mistakes),
   ~10 feature tests (both registers, both directions, +, bank→bank, refusals, preview, autocomplete round trip) and a Playwright journey of "Neo Credit Card Payment 300.00 261003 @neo".
+
+- **2026-10-07** — Added `make run-lan` (`VINANCE_ADDR=0.0.0.0:8080`) so the app can be opened from a phone or another computer on the same Wi-Fi. `make run` is unchanged (localhost only). No auth exists, so README keeps the trusted-network warning.
 
 ## Status
 
