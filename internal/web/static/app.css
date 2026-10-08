@@ -35,6 +35,9 @@ li.txn .amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
 li.txn .amount-col { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
 li.txn .running { color: var(--pico-muted-color); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 0.75rem; }
 p.account-header { margin: 0.25rem 0; font-size: 1.05rem; font-weight: 600; }
+#txn-list .day { margin: 1.1rem 0 0; padding: 0 0 0.2rem; list-style: none; font-size: 0.85rem; font-weight: 600; color: var(--pico-muted-color); border-bottom: 1px solid var(--pico-muted-border-color); }
+#txn-list .day:first-child { margin-top: 0.25rem; }
+#txn-list li.txn .date { display: none; }
 li.txn.dir-out .amount { color: var(--pico-del-color); }
 li.txn.dir-in .amount { color: var(--pico-ins-color); }
 li.txn .line2 { display: flex; flex-wrap: wrap; gap: 0.3rem 0.4rem; align-items: center; font-size: 0.8rem; color: var(--pico-muted-color); }

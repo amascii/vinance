@@ -24,7 +24,7 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 - **Double-entry under the hood.** Every transaction's splits sum to zero and the editor refuses to save one that doesn't, so balances always add up. Money booked to an Imbalance account shows up as "needs fixing" until you categorise it.
 - **Multi-currency.** Each account has one currency; cross-currency transactions keep both the amount and the value. Balances and net worth are converted to USD with stored rates.
 - **Budgets and recurring entries.** Monthly budgets per tag with an even-pace marker, and recurring rules that wait for you to Add or Skip each due occurrence (nothing is created behind your back).
-- **Bulk tag editing, filters and search** across the whole history, with infinite scroll.
+- **Bulk tag editing, filters and search** across the whole history, with infinite scroll. Transactions are grouped under a heading for each day.
 - **Money is exact.** Amounts are integer minor units end to end; there is no floating point anywhere near a balance.
 
 | Transactions | Split editor |

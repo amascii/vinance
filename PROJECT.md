@@ -184,7 +184,7 @@ Env: `VINANCE_DB`, `VINANCE_ADDR`, `LOG_LEVEL` (see Stack). Logs are JSON on std
 | Route | What |
 |---|---|
 | `/` | Entry form (kind, account, date picker, description autocomplete, amount, tags), recent list, "N need fixing" banner, first-run welcome |
-| `/transactions` | Filterable list (text, account, tags, dates, needs-fixing, untagged), infinite scroll, split detail |
+| `/transactions` | Filterable list grouped under a heading per day (text, account, tags, dates, needs-fixing, untagged), infinite scroll, split detail |
 | `/transactions/{id}` | Editor: split lines, live remaining, add/remove/reorder, delete |
 | `/accounts`, `/accounts/manage` | Balances + USD net worth; create / rename / archive / delete accounts |
 | `/budgets` | Monthly budgets per tag for any month: severity meters (color + icon + label), even-pace tick, month navigation |
@@ -263,6 +263,7 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
       Tests: unit for the ledger bulk operation (add/remove/move, idempotent when the tag is already there, tags created on demand), feature test for the endpoint, e2e journey (tick 2 of 3 rows, add a tag, only those two change; select-all-matching).
 - [x] **Filtered total:** net of the matching transactions (signed, per currency) at the bottom of the list whenever a filter is active; see Decision 11. Tests: ledger unit, feature, e2e (spans pages, updates live).
 - [x] **README with screenshots** from synthetic demo data (`internal/demo`, `cmd/screenshots`, `make screenshots`), MIT license, PR-only workflow
+- [x] **Group transactions by date:** `/transactions` shows a date heading ("October 5, 2026") above each day's rows, like a bank app; the per-row date is hidden there.
 - [x] **`make run-lan`:** run bound to `0.0.0.0:8080` for access from other devices on the same network
 
 ## Log
@@ -521,3 +522,5 @@ Nothing is blocked. These are choices I made on your behalf; each is easy to cha
 - **2026-10-07** — Added an MIT `LICENSE` (copyright holder: the GitHub handle).
 - **2026-10-07** — README with screenshots. `internal/demo` seeds a deterministic synthetic ledger (4 accounts, ~140 transactions, a split receipt, a peso trip, one imbalance, 5 budgets, 4 recurring rules) into a *temp* DB; `cmd/screenshots` serves the app against it with a fixed clock (2026-09-24) and captures 7 pages with Playwright into `docs/screenshots`. `data/vinance.db` is never opened (checked: size and mtime unchanged). Workflow change: changes now go through a branch + PR, not straight to `main`.
 - **2026-10-07** — CI: `.github/workflows/ci.yml` (change detection, generated-code check, build/vet/test, Playwright e2e), README badge, and the branch-protection + squash-only decision (#12).
+- **2026-10-07** — Transactions grouped by day: `TxnItems` emits an `li.day` heading when the date changes. Infinite scroll passes the cursor's date as `prevDate`, so a day split across pages gets one heading. Home's recent list is unchanged. Tests: feature (boundary day), view unit, Playwright.
+- **2026-10-07** — Regenerated the README screenshots (`make screenshots`; only the transactions one changed) and added the rule that UI changes update the docs.

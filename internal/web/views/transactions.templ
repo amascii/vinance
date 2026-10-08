@@ -77,7 +77,7 @@ templ TxnResults(m TxnList) {
 	}
 	<p class="count">{ Thousands(m.Count) } { plural(m.Count, "transaction", "transactions") }</p>
 	<ul id="txn-list" class="txns">
-		@TxnItems(m.Items, m.NextURL)
+		@TxnItems(m.Items, m.NextURL, "")
 	</ul>
 	if m.Count == 0 {
 		<p class="empty">Nothing matches these filters.</p>
@@ -93,9 +93,14 @@ templ TxnResults(m TxnList) {
 }
 
 // TxnItems renders list rows plus, when there is more, a sentinel that loads the next page
-// as soon as it scrolls into view and replaces itself with those rows.
-templ TxnItems(items []TxnRow, nextURL string) {
-	for _, r := range items {
+// as soon as it scrolls into view and replaces itself with those rows. Rows are grouped under a
+// date heading; prevDate is the last date already on screen, so a day that spans two pages
+// gets one heading.
+templ TxnItems(items []TxnRow, nextURL, prevDate string) {
+	for i, r := range items {
+		if (i == 0 && r.Date != prevDate) || (i > 0 && r.Date != items[i-1].Date) {
+			<li class="day" role="presentation"><time datetime={ r.Date }>{ DayHeading(r.Date) }</time></li>
+		}
 		@TxnItem(r)
 	}
 	if nextURL != "" {

@@ -366,3 +366,32 @@ func TestTransactionsTotalNetsMatchingRows(t *testing.T) {
 	_, d = get(t, srv, "/transactions?q=nobody")
 	assert.Equal(t, 0, d.Find("#txn-total").Length(), "nothing matched, nothing to total")
 }
+
+func TestTransactionsGroupedByDay(t *testing.T) {
+	srv, conn := newApp(t)
+	s := newSeeder(t, conn)
+	s.spend("2026-08-31", "last", 100)
+	for i := 0; i < 52; i++ { // one day that straddles the page boundary
+		s.spend("2026-09-01", fmt.Sprintf("mid-%02d", i), 100)
+	}
+	for i := 0; i < 3; i++ {
+		s.spend("2026-09-02", fmt.Sprintf("top-%d", i), 100)
+	}
+
+	headings := func(d *goquery.Document) []string {
+		var out []string
+		d.Find("li.day").Each(func(_ int, s *goquery.Selection) { out = append(out, strings.TrimSpace(s.Text())) })
+		return out
+	}
+
+	_, d := get(t, srv, "/transactions")
+	assert.Equal(t, []string{"September 2, 2026", "September 1, 2026"}, headings(d))
+	first := d.Find("#txn-list > li").First()
+	assert.True(t, first.HasClass("day"), "a heading comes before the first row")
+
+	next, _ := d.Find("li.more").Attr("hx-get")
+	require.NotEmpty(t, next)
+	_, frag := getHTMX(t, srv, next)
+	assert.Equal(t, []string{"August 31, 2026"}, headings(frag), "September 1 continues the page above, so it gets no second heading")
+	assert.Equal(t, 5, frag.Find("li.txn").Length()-1)
+}

@@ -189,7 +189,7 @@ func (s *Server) transactions(w http.ResponseWriter, r *http.Request) {
 	htmxReq := r.Header.Get("HX-Request") == "true" && r.Header.Get("HX-History-Restore-Request") != "true"
 	switch {
 	case htmxReq && p.filter.Before != nil: // infinite scroll: just the next rows
-		s.render(w, r, http.StatusOK, views.TxnItems(m.Items, m.NextURL))
+		s.render(w, r, http.StatusOK, views.TxnItems(m.Items, m.NextURL, p.filter.Before.Date))
 	case htmxReq: // filter change: count + first page
 		// Push the canonical URL (no empty parameters) rather than the raw form serialization.
 		w.Header().Set("HX-Push-Url", p.canonicalURL())
