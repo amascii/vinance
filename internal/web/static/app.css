@@ -288,7 +288,7 @@ ul.balances li:has(input.tick:checked) a.name { text-decoration: line-through; }
 .entry-form .field { display: block; margin: 0; position: relative; }
 .entry-form input, .entry-form select, .entry-form button { margin: 0; font-size: 0.9rem; }
 .entry-form select { width: auto; padding-right: 1.8rem; background-position: right 0.5rem center; }
-.entry-form input[type=date] { width: 7.8rem; }
+.entry-form input[type=date] { width: 9.5rem; }
 .entry-form .kind-field select { width: 5.5rem; }
 .entry-form .account-field select { width: 7.2rem; max-width: 100%; }
 .entry-form .direction select { width: 11rem; }
