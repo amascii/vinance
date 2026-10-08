@@ -56,7 +56,7 @@ Config is read from environment variables: `VINANCE_DB` (default `./data/vinance
 9. **Libraries:** prefer the standard, widely used Go libraries (see Stack) over hand-rolling. Don't reinvent routing, templating or migrations.
 10. **Bulk tag editing (decided 2026-10-03):** *Add* tags every expense/income (category) line of each selected transaction; *Remove*/*Move* touch only lines that carry the tag. The selection is **cleared whenever the filter or search changes** (the bar and rows are swapped together); "load more" only appends rows that are still on screen, so earlier ticks stay. A **confirm step** states how many transactions/lines will change; there is no undo.
 11. **Filtered total (decided 2026-10-05):** whenever a search/filter is active, `/transactions` shows a sticky bottom line with the **net movement of the real (asset/liability) accounts over the whole matching set**, one amount per transaction currency (never mixed), signed (negative = money went out), no "owes you" wording. Same net as each row's `Summary`, so own-account transfers net to zero. Summed in SQL (`ledger.Service.Totals`), so it covers rows past the first page. Use case: lending money, `meal (john)` -100 then `transfer (john)` +50 → -50.
-
+12. **CI and branch protection (decided 2026-10-07):** every change goes through a PR. `.github/workflows/ci.yml` runs on each PR and on `main`: a `changes` job skips the heavy jobs for docs-only diffs, then `test` (generated code is current, build, vet, `go test ./...`) and `e2e` (Playwright on Ubuntu). Branch protection on `main` requires `test` and `e2e`, requires a PR (0 approvals, since the owner cannot approve their own), blocks force-pushes and deletion, and applies to admins. Merges are squash-only. No workflow-level `paths:` filter: it would leave required checks pending forever on docs-only PRs; skipped jobs count as passing instead.
 ## Roadmap
 
 - **v1:** skeleton, schema, GnuCash import, quick-add, transaction editor with splits, transaction list and filters, balances, tag report, imbalance fixing.
@@ -164,6 +164,8 @@ available if we want a Safari/iPhone-like check later. This machine already has 
 
 Shared helpers live in `internal/testutil`: `NewDB(t)` (temp migrated DB), `NewServer(t)`, and `Seed*` fixtures. Use synthetic data only; never real `data/`.
 The feature layer is the main workhorse because most UI behavior is server-rendered HTML. E2E is for the parts that only happen in the browser.
+
+**CI:** the same layers run on GitHub Actions for every PR (see Decisions #12). Run `make test` and `make e2e` locally before pushing; CI also fails if `make generate` would change committed generated code.
 
 ## Running it
 
@@ -514,3 +516,4 @@ Nothing is blocked. These are choices I made on your behalf; each is easy to cha
 - **2026-10-07** — First push: private GitHub repo `amascii/vinance`. Final pre-publication pass: generalised the category-tree and subscription examples; CLAUDE.md now documents the remote.
 - **2026-10-07** — Added an MIT `LICENSE` (copyright holder: the GitHub handle).
 - **2026-10-07** — README with screenshots. `internal/demo` seeds a deterministic synthetic ledger (4 accounts, ~140 transactions, a split receipt, a peso trip, one imbalance, 5 budgets, 4 recurring rules) into a *temp* DB; `cmd/screenshots` serves the app against it with a fixed clock (2026-09-24) and captures 7 pages with Playwright into `docs/screenshots`. `data/vinance.db` is never opened (checked: size and mtime unchanged). Workflow change: changes now go through a branch + PR, not straight to `main`.
+- **2026-10-07** — CI: `.github/workflows/ci.yml` (change detection, generated-code check, build/vet/test, Playwright e2e), README badge, and the branch-protection + squash-only decision (#12).
