@@ -1,0 +1,88 @@
+package views
+
+// Icons are inline Lucide (lucide.dev, ISC licence) outlines; they inherit the text colour.
+templ icon(name string) {
+	<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+		switch name {
+			case "house":
+				<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path>
+				<path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+			case "wallet":
+				<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path>
+				<path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
+			case "list":
+				<path d="M3 12h.01"></path>
+				<path d="M3 18h.01"></path>
+				<path d="M3 6h.01"></path>
+				<path d="M8 12h13"></path>
+				<path d="M8 18h13"></path>
+				<path d="M8 6h13"></path>
+			case "menu":
+				<path d="M4 12h16"></path>
+				<path d="M4 6h16"></path>
+				<path d="M4 18h16"></path>
+			case "pie":
+				<path d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"></path>
+				<path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+			case "repeat":
+				<path d="m17 2 4 4-4 4"></path>
+				<path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+				<path d="m7 22-4-4 4-4"></path>
+				<path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+			case "tag":
+				<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"></path>
+				<circle cx="7.5" cy="7.5" r=".5" fill="currentColor"></circle>
+			case "pencil":
+				<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path>
+				<path d="m15 5 4 4"></path>
+		}
+	</svg>
+}
+
+// navItem is a top-bar link; keepLabel keeps its text visible on phones (others shrink to the icon).
+templ navItem(l navLink, section string, keepLabel bool) {
+	<a href={ templ.SafeURL(l.Href) } class={ "navlink", templ.KV("active", section == l.Href) } if section == l.Href {
+			aria-current="page"
+		}>
+		@icon(l.Icon)
+		<span class={ "label", templ.KV("keep", keepLabel) }>{ l.Label }</span>
+	</a>
+}
+
+templ siteNav() {
+	{{ section := currentSection(ctx) }}
+	<nav class="site-nav" aria-label="Main">
+		<ul>
+			<li>
+				@navItem(navLink{Href: "/", Label: "Home", Icon: "house"}, section, false)
+			</li>
+		</ul>
+		<ul>
+			for i, l := range navMain {
+				<li>
+					@navItem(l, section, i == 0)
+				</li>
+			}
+			<li>
+				<details class="dropdown nav-more">
+					<summary class={ "navlink", templ.KV("active", inMore(section)) }>
+						@icon("menu")
+						<span class="label">More</span>
+					</summary>
+					<ul dir="rtl">
+						for _, l := range navMore {
+							<li dir="ltr">
+								<a href={ templ.SafeURL(l.Href) } class={ templ.KV("active", section == l.Href) } if section == l.Href {
+			aria-current="page"
+		}>
+									@icon(l.Icon)
+									{ l.Label }
+								</a>
+							</li>
+						}
+					</ul>
+				</details>
+			</li>
+		</ul>
+	</nav>
+}

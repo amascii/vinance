@@ -241,7 +241,7 @@ func TestAccountManageCrossOriginAndLinks(t *testing.T) {
 	assert.Equal(t, 3, count(t, conn, "accounts")-4)
 
 	_, d := get(t, srv, "/accounts")
-	assert.Equal(t, 1, d.Find(`a[href="/accounts/manage"]`).Length())
+	assert.Equal(t, 1, d.Find(`main a[href="/accounts/manage"]`).Length())
 	_, d = get(t, srv, "/accounts/manage")
 	assert.Equal(t, 1, d.Find(`p.crumbs a[href="/accounts"]`).Length())
 }

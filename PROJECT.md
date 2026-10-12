@@ -57,6 +57,7 @@ Config is read from environment variables: `VINANCE_DB` (default `./data/vinance
 10. **Bulk tag editing (decided 2026-10-03):** *Add* tags every expense/income (category) line of each selected transaction; *Remove*/*Move* touch only lines that carry the tag. The selection is **cleared whenever the filter or search changes** (the bar and rows are swapped together); "load more" only appends rows that are still on screen, so earlier ticks stay. A **confirm step** states how many transactions/lines will change; there is no undo.
 11. **Filtered total (decided 2026-10-05):** whenever a search/filter is active, `/transactions` shows a sticky bottom line with the **net movement of the real (asset/liability) accounts over the whole matching set**, one amount per transaction currency (never mixed), signed (negative = money went out), no "owes you" wording. Same net as each row's `Summary`, so own-account transfers net to zero. Summed in SQL (`ledger.Service.Totals`), so it covers rows past the first page. Use case: lending money, `meal (john)` -100 then `transfer (john)` +50 → -50.
 12. **CI and branch protection (decided 2026-10-07):** every change goes through a PR. `.github/workflows/ci.yml` runs on each PR and on `main`: a `changes` job skips the heavy jobs for docs-only diffs, then `test` (generated code is current, build, vet, `go test ./...`) and `e2e` (Playwright on Ubuntu). Branch protection on `main` requires `test` and `e2e`, requires a PR (0 approvals, since the owner cannot approve their own), blocks force-pushes and deletion, and applies to admins. Merges are squash-only. No workflow-level `paths:` filter: it would leave required checks pending forever on docs-only PRs; skipped jobs count as passing instead.
+13. **Navigation (decided 2026-10-11):** "priority+" top bar, not a hamburger-only menu (hidden nav gets used far less). Left: **Home** (house icon; replaces the "vinance" brand, which stays in `<title>`). Right: **Accounts** and **Transactions** (the frequent pages), then **More** (☰), a Pico `<details class="dropdown">` holding Budgets, Recurring, Tags, Manage accounts, Manage tags. Every item is icon + label (inline Lucide SVGs, no icon font/CDN); under 36rem only Accounts keeps its visible label, the rest keep it for screen readers. The current page gets `aria-current="page"` and a tint; a page inside the menu also tints More. Stays at the top on phones (a bottom tab bar would fight Safari's toolbar and the keyboard on the entry form). Works without JS; JS only adds Escape-to-close.
 ## Roadmap
 
 - **v1:** skeleton, schema, GnuCash import, quick-add, transaction editor with splits, transaction list and filters, balances, tag report, imbalance fixing.
@@ -190,6 +191,7 @@ Env: `VINANCE_DB`, `VINANCE_ADDR`, `LOG_LEVEL` (see Stack). Logs are JSON on std
 | `/budgets` | Monthly budgets per tag for any month: severity meters (color + icon + label), even-pace tick, month navigation |
 | `/recurring` | Due recurring entries (Add / Skip), rules with schedules (add, edit, pause, delete) |
 | `/tags`, `/tags/manage` | Spending/income by tag with date ranges and bars; rename / merge / delete tags |
+| (every page) | Top nav: Home · Accounts · Transactions · More ▾ (Budgets, Recurring, Tags, Manage accounts, Manage tags); see Decision 13 |
 | `/healthz` | JSON health check (pings the DB) |
 
 POSTs are protected by `http.CrossOriginProtection`; every state-changing form also works without JS.
@@ -265,6 +267,7 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
 - [x] **README with screenshots** from synthetic demo data (`internal/demo`, `cmd/screenshots`, `make screenshots`), MIT license, PR-only workflow
 - [x] **Group transactions by date:** `/transactions` shows a date heading ("October 5, 2026") above each day's rows, like a bank app; the per-row date is hidden there.
 - [x] **`make run-lan`:** run bound to `0.0.0.0:8080` for access from other devices on the same network
+- [x] **Navigation rethink:** Home (house) left; Accounts + Transactions visible; the rest under a More menu; icons, current-page highlight, one row on phones (Decision 13)
 
 ## Log
 
@@ -525,3 +528,4 @@ Nothing is blocked. These are choices I made on your behalf; each is easy to cha
 - **2026-10-07** — Transactions grouped by day: `TxnItems` emits an `li.day` heading when the date changes. Infinite scroll passes the cursor's date as `prevDate`, so a day split across pages gets one heading. Home's recent list is unchanged. Tests: feature (boundary day), view unit, Playwright.
 - **2026-10-07** — Regenerated the README screenshots (`make screenshots`; only the transactions one changed) and added the rule that UI changes update the docs.
 - **2026-10-07** — Fixed the entry form's date input clipping the year behind the calendar icon (`input[type=date]` width 7.8rem → 9.5rem). The native control still shows the browser's locale format (e.g. `mm/dd/yyyy`); only the submitted value is ISO.
+- **2026-10-11** — New top nav (Decision 13): `views.WithPath` middleware puts the request path in the context and `navSection` (longest prefix) picks the current item, so `/transactions/42` lights Transactions and `/tags/manage/rename` lights Manage tags + More. Lucide icons inlined as a templ component. Pico's dropdown already closes on an outside click via an overlay; `app.js` adds Escape. New `nav-phone.png` screenshot. Tests: `navSection` unit, feature (links, menu contents, `aria-current`), Playwright phone journey (single row, open/close, Escape focus, menu navigation); existing journeys open More before clicking Budgets/Tags.

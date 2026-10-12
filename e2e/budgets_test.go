@@ -20,6 +20,7 @@ func TestBudgetsJourney(t *testing.T) {
 	_, err := page.Goto(srv.URL + "/")
 	require.NoError(t, err)
 
+	openMore(t, page)
 	require.NoError(t, page.Locator("header nav a", playwright.PageLocatorOptions{HasText: "Budgets"}).Click())
 	require.NoError(t, expect.Page(page).ToHaveURL(regexpFor(`/budgets$`)))
 	require.NoError(t, expect.Locator(page.Locator("p.empty")).ToContainText("No budgets yet"))

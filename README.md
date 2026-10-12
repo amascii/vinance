@@ -25,6 +25,7 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 - **Multi-currency.** Each account has one currency; cross-currency transactions keep both the amount and the value. Balances and net worth are converted to USD with stored rates.
 - **Budgets and recurring entries.** Monthly budgets per tag with an even-pace marker, and recurring rules that wait for you to Add or Skip each due occurrence (nothing is created behind your back).
 - **Bulk tag editing, filters and search** across the whole history, with infinite scroll. Transactions are grouped under a heading for each day.
+- **Navigation that stays out of the way.** Home, Accounts and Transactions are always one tap away; Budgets, Recurring, Tags and the manage pages sit in a More menu. On a phone the bar shrinks to icons on a single row.
 - **Money is exact.** Amounts are integer minor units end to end; there is no floating point anywhere near a balance.
 
 | Transactions | Split editor |
@@ -38,6 +39,10 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 | Spending by tag | Recurring |
 |---|---|
 | ![Spending by tag with bars](docs/screenshots/tags.png) | ![Due and scheduled recurring entries](docs/screenshots/recurring.png) |
+
+| Navigation on a phone |
+|---|
+| ![Phone-width nav with the More menu open](docs/screenshots/nav-phone.png) |
 
 ## Running it
 

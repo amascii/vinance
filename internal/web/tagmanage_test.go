@@ -187,7 +187,7 @@ func TestTagManageRejectsCrossOrigin(t *testing.T) {
 func TestTagReportLinksToManagement(t *testing.T) {
 	srv, _ := newApp(t)
 	_, d := get(t, srv, "/tags")
-	assert.Equal(t, 1, d.Find(`a[href="/tags/manage"]`).Length())
+	assert.Equal(t, 1, d.Find(`main a[href="/tags/manage"]`).Length())
 	_, d = get(t, srv, "/tags/manage")
 	assert.Equal(t, 1, d.Find(`p.crumbs a[href="/tags"]`).Length())
 }

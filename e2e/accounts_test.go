@@ -19,7 +19,7 @@ func TestAccountsPageLinksToTransactions(t *testing.T) {
 	_, err := page.Goto(srv.URL + "/")
 	require.NoError(t, err)
 
-	require.NoError(t, page.Locator("header nav a", playwright.PageLocatorOptions{HasText: "Accounts"}).Click())
+	require.NoError(t, page.Locator(`header nav a[href="/accounts"]`).Click())
 	require.NoError(t, expect.Page(page).ToHaveURL(regexpFor(`/accounts$`)))
 	require.NoError(t, expect.Locator(page.Locator(".networth .figure")).ToHaveText("-$4.50"))
 	require.NoError(t, expect.Locator(page.Locator("ul.balances li", playwright.PageLocatorOptions{HasText: "BRISK"}).Locator(".balance")).ToHaveText("$4.50"))

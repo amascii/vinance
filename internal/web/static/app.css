@@ -1,14 +1,27 @@
 /* vinance: small additions on top of Pico CSS. Mobile first. */
 /* desktop use: Pico caps the page at 700px on mid-width windows, which forces the one-line forms to wrap */
 header.container, main.container { max-width: 1200px; padding-inline: clamp(1rem, 3vw, 2.5rem); }
-header.container nav { padding-block: 0.5rem; flex-wrap: wrap; row-gap: 0; }
-header.container nav ul { flex-wrap: wrap; }
-@media (max-width: 30rem) {
-  header.container nav ul li { padding: 0.2rem 0.3rem; }
-  header.container nav ul li a { font-size: 0.85rem; padding: 0.2rem 0.3rem; }
-  header.container nav ul:last-child li:last-child { padding-right: 0; }
+/* site nav: Home on the left; Accounts, Transactions and a More menu on the right. Icon + label, icons only on phones (Accounts keeps its label). */
+.site-nav { padding-block: 0.5rem; }
+.site-nav ul li { padding: 0.25rem 0.15rem; }
+.site-nav { --nav-tint: color-mix(in srgb, var(--pico-primary) 12%, transparent); --nav-hover: color-mix(in srgb, var(--pico-primary) 6%, transparent); }
+.site-nav .navlink, .site-nav details.nav-more summary.navlink:not([role]) { display: inline-flex; align-items: center; gap: 0.4rem; height: auto; margin: 0;
+  padding: 0.4rem 0.7rem; border: 0; border-radius: var(--pico-border-radius); background-color: transparent; box-shadow: none;
+  color: var(--pico-primary); line-height: var(--pico-line-height); text-decoration: none; }
+.site-nav .navlink:hover, .site-nav details.nav-more summary.navlink:not([role]):hover { background-color: var(--nav-hover); }
+.site-nav .navlink.active, .site-nav details.nav-more summary.navlink.active:not([role]) { background-color: var(--nav-tint); font-weight: 600; }
+.site-nav .navlink:focus-visible, .site-nav details.nav-more summary.navlink:not([role]):focus-visible { box-shadow: 0 0 0 var(--pico-outline-width) var(--pico-primary-focus); }
+.site-nav details.nav-more summary.navlink::after { display: none; }
+.site-nav .icon { flex: none; }
+.site-nav details.nav-more { margin: 0; }
+.site-nav details.nav-more > ul { min-width: 13rem; }
+.site-nav details.nav-more > ul li a { display: flex; align-items: center; gap: 0.6rem; }
+.site-nav details.nav-more > ul li a.active { color: var(--pico-primary); font-weight: 600; }
+.site-nav details.nav-more > ul li:nth-child(4) { border-top: 1px solid var(--pico-muted-border-color); }
+@media (max-width: 36rem) {
+  .site-nav .label:not(.keep) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .site-nav .navlink { padding: 0.45rem 0.55rem; }
 }
-.brand { text-decoration: none; }
 
 
 
