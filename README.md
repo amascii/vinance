@@ -12,6 +12,7 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 ## Contents
 
 - [Features](#features)
+- [Finding your way around](#finding-your-way-around)
 - [Running it](#running-it)
 - [Development](#development)
 - [License](#license)
@@ -25,7 +26,7 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 - **Multi-currency.** Each account has one currency; cross-currency transactions keep both the amount and the value. Balances and net worth are converted to USD with stored rates.
 - **Budgets and recurring entries.** Monthly budgets per tag with an even-pace marker, and recurring rules that wait for you to Add or Skip each due occurrence (nothing is created behind your back).
 - **Bulk tag editing, filters and search** across the whole history, with infinite scroll. Transactions are grouped under a heading for each day.
-- **Navigation that stays out of the way.** Home, Accounts and Transactions are always one tap away; Budgets, Recurring, Tags and the manage pages sit in a More menu. On a phone the bar shrinks to icons on a single row.
+- **Navigation that stays out of the way.** **Home** (the house, top left) is the entry form; **Accounts** and **Transactions** are always visible on the right; **More** (☰) holds Budgets, Recurring, Tags, Manage accounts and Manage tags. Every item has an icon and the current page is highlighted. On a phone the bar shrinks to icons on a single row (see [Finding your way around](#finding-your-way-around)).
 - **Money is exact.** Amounts are integer minor units end to end; there is no floating point anywhere near a balance.
 
 | Transactions | Split editor |
@@ -40,9 +41,22 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 |---|---|
 | ![Spending by tag with bars](docs/screenshots/tags.png) | ![Due and scheduled recurring entries](docs/screenshots/recurring.png) |
 
-| Navigation on a phone |
-|---|
-| ![Phone-width nav with the More menu open](docs/screenshots/nav-phone.png) |
+## Finding your way around
+
+| In the top bar | Page |
+|---|---|
+| **Home** | Quick-entry form, recent transactions, and a banner when recurring entries are due |
+| **Accounts** | Balances and net worth |
+| **Transactions** | Full history with filters, search and bulk tag editing |
+| **More → Budgets** | Monthly budgets per tag |
+| **More → Recurring** | Due and scheduled recurring entries |
+| **More → Tags** | Spending by tag |
+| **More → Manage accounts** | Add, rename, archive or delete accounts |
+| **More → Manage tags** | Rename, merge or delete tags |
+
+On a phone the bar stays at the top as a single row of icons (only Accounts keeps its label), and the More menu opens below it:
+
+![Phone-width nav with the More menu open](docs/screenshots/nav-phone.png)
 
 ## Running it
 
@@ -56,7 +70,7 @@ make run-lan      # same, but reachable from your phone/other computers on the s
 ```
 
 The database is created and migrated on first start at `./data/vinance.db`. `data/` is gitignored, so your numbers never end up in the repo.
-Add your first account on the **Accounts → Add, rename or archive accounts** page, then use the form on the home page.
+Add your first account under **More → Manage accounts**, then use the form on **Home**.
 
 | Variable | Default | |
 |---|---|---|
