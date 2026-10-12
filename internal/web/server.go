@@ -16,6 +16,7 @@ import (
 
 	"github.com/amascii/vinance/internal/db/gen"
 	"github.com/amascii/vinance/internal/ledger"
+	"github.com/amascii/vinance/internal/web/views"
 )
 
 //go:embed static
@@ -54,6 +55,7 @@ func NewRouter(logger *slog.Logger, conn *sql.DB, opts ...Option) http.Handler {
 	// Reject cross-site state-changing requests (a hostile web page POSTing to localhost).
 	r.Use(http.NewCrossOriginProtection().Handler)
 	r.Use(auth)
+	r.Use(views.WithPath)
 
 	static, _ := fs.Sub(staticFS, "static")
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServerFS(static)))

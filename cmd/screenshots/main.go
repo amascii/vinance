@@ -124,5 +124,33 @@ func run(out string) error {
 			return fmt.Errorf("%s: %w", s.name, err)
 		}
 	}
-	return nil
+	return phoneNav(browser, base, out)
+}
+
+// phoneNav shows the nav at phone width with the More menu open.
+func phoneNav(browser playwright.Browser, base, out string) error {
+	bctx, err := browser.NewContext(playwright.BrowserNewContextOptions{
+		Viewport:          &playwright.Size{Width: 390, Height: 844},
+		DeviceScaleFactor: playwright.Float(2),
+	})
+	if err != nil {
+		return err
+	}
+	defer bctx.Close()
+	page, err := bctx.NewPage()
+	if err != nil {
+		return err
+	}
+	if _, err := page.Goto(base + "/budgets"); err != nil {
+		return fmt.Errorf("nav-phone: %w", err)
+	}
+	if err := page.Locator("details.nav-more summary").Click(); err != nil {
+		return fmt.Errorf("nav-phone: %w", err)
+	}
+	time.Sleep(300 * time.Millisecond)
+	_, err = page.Screenshot(playwright.PageScreenshotOptions{
+		Path: playwright.String(filepath.Join(out, "nav-phone.png")),
+		Clip: &playwright.Rect{X: 0, Y: 0, Width: 390, Height: 420},
+	})
+	return err
 }

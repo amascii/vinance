@@ -18,10 +18,7 @@ templ Layout(title string) {
 		</head>
 		<body>
 			<header class="container">
-				<nav>
-					<ul><li><a href="/" class="brand"><strong>vinance</strong></a></li></ul>
-					<ul><li><a href="/accounts">Accounts</a></li><li><a href="/tags">Tags</a></li><li><a href="/budgets">Budgets</a></li><li><a href="/recurring">Recurring</a></li><li><a href="/transactions">Transactions</a></li></ul>
-				</nav>
+				@siteNav()
 			</header>
 			<main class="container">
 				{ children... }

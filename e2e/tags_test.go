@@ -22,7 +22,8 @@ func TestTagReportJourney(t *testing.T) {
 	_, err := page.Goto(srv.URL + "/")
 	require.NoError(t, err)
 
-	require.NoError(t, page.Locator("header nav a", playwright.PageLocatorOptions{HasText: "Tags"}).Click())
+	openMore(t, page)
+	require.NoError(t, page.Locator(`header nav a[href="/tags"]`).Click())
 	require.NoError(t, expect.Page(page).ToHaveURL(regexpFor(`/tags$`)))
 	rows := page.Locator("ul.bars li.bar-row")
 	require.NoError(t, expect.Locator(rows).ToHaveCount(3), "this month: groceries, fast-food, untagged")

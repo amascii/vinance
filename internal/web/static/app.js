@@ -257,3 +257,11 @@ document.addEventListener('click', (evt) => {
     if (name) { name.focus(); name.select(); }
   }, 0);
 });
+
+// ---- the More menu (a <details> dropdown, so it works without JS) ----
+
+// Pico closes it on a click outside (an overlay behind the menu); Escape closes it too, like a native menu.
+document.addEventListener('keydown', (evt) => {
+  if (evt.key !== 'Escape') return;
+  $$('details.nav-more[open]').forEach((d) => { d.open = false; $('summary', d).focus(); });
+});
