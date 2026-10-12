@@ -96,6 +96,28 @@ something private such as Tailscale and serve it over HTTPS (with `VINANCE_SECUR
 
 ![The login page at phone width](docs/screenshots/login.png)
 
+### Running as a service (macOS)
+
+To keep it running in the background on a Mac and reach it from your phone through [Tailscale](https://tailscale.com):
+
+```sh
+make service-install    # builds, copies data/vinance.db, writes the LaunchAgent, starts it (asks for your password hash)
+tailscale serve --bg 8787   # publishes it, to your own devices only, at https://<mac-name>.<tailnet>.ts.net
+```
+
+The service listens on `127.0.0.1:8787` (so `make run` on 8080 still works beside it), keeps its own database in
+`~/Library/Application Support/vinance/` (the repo's `data/` is only copied from, never used) and logs JSON to `~/Library/Logs/vinance/vinance.log`.
+It starts when you log in and restarts if it crashes. It sets `VINANCE_SECURE_COOKIES=true`, so open it over HTTPS (the Tailscale URL).
+Never use `tailscale funnel`: that makes it public.
+
+| | |
+|---|---|
+| `make deploy` | after merging to `main`: pull, then this builds `main`, backs up the database, restarts, and rolls back the binary if the new build doesn't come up healthy |
+| `make service-status` | is it loaded, does `/healthz` answer |
+| `make service-uninstall` | stops it and removes the LaunchAgent; your data stays |
+
+The password hash is stored in `~/Library/LaunchAgents/com.amascii.vinance.plist` (mode 600). The Mac must not sleep: the app is down while it does.
+
 ## Development
 
 ```sh
