@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"log/slog"
@@ -18,6 +19,7 @@ import (
 	"time"
 
 	"github.com/mxschmitt/playwright-go"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/amascii/vinance/internal/db"
 	"github.com/amascii/vinance/internal/demo"
@@ -58,14 +60,21 @@ func run(out string) error {
 		return err
 	}
 
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	base, closeSrv, err := serve(quiet, conn)
 	if err != nil {
 		return err
 	}
-	srv := &http.Server{Handler: web.NewRouter(quiet, conn, web.WithClock(func() time.Time { return demo.Today }))}
-	go srv.Serve(ln)
-	defer srv.Close()
-	base := "http://" + ln.Addr().String()
+	defer closeSrv()
+	// The same data behind a login, for the login page and the nav's Log out entry.
+	hash, err := bcrypt.GenerateFromPassword([]byte(demoPassword), bcrypt.MinCost)
+	if err != nil {
+		return err
+	}
+	authBase, closeAuth, err := serve(quiet, conn, web.WithAuth(string(hash), false))
+	if err != nil {
+		return err
+	}
+	defer closeAuth()
 
 	pw, err := playwright.Run()
 	if err != nil {
@@ -124,11 +133,25 @@ func run(out string) error {
 			return fmt.Errorf("%s: %w", s.name, err)
 		}
 	}
-	return phoneNav(browser, base, out)
+	return phoneAuth(browser, authBase, out)
 }
 
-// phoneNav shows the nav at phone width with the More menu open.
-func phoneNav(browser playwright.Browser, base, out string) error {
+const demoPassword = "demo password"
+
+// serve starts the real app on a free local port and returns its base URL and a stop function.
+func serve(logger *slog.Logger, conn *sql.DB, opts ...web.Option) (string, func(), error) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return "", nil, err
+	}
+	opts = append(opts, web.WithClock(func() time.Time { return demo.Today }))
+	srv := &http.Server{Handler: web.NewRouter(logger, conn, opts...)}
+	go srv.Serve(ln)
+	return "http://" + ln.Addr().String(), func() { srv.Close() }, nil
+}
+
+// phoneAuth captures, at phone width, the login page and then the nav with the More menu open (including Log out).
+func phoneAuth(browser playwright.Browser, base, out string) error {
 	bctx, err := browser.NewContext(playwright.BrowserNewContextOptions{
 		Viewport:          &playwright.Size{Width: 390, Height: 844},
 		DeviceScaleFactor: playwright.Float(2),
@@ -141,7 +164,21 @@ func phoneNav(browser playwright.Browser, base, out string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := page.Goto(base + "/budgets"); err != nil {
+	if _, err := page.Goto(base + "/budgets"); err != nil { // redirected to the login page
+		return fmt.Errorf("login: %w", err)
+	}
+	if err := page.Locator("input[name=password]").Fill(demoPassword); err != nil {
+		return fmt.Errorf("login: %w", err)
+	}
+	// Shot before submitting would show an empty field; show it filled but hidden dots are fine.
+	time.Sleep(300 * time.Millisecond)
+	if _, err := page.Screenshot(playwright.PageScreenshotOptions{
+		Path: playwright.String(filepath.Join(out, "login.png")),
+		Clip: &playwright.Rect{X: 0, Y: 0, Width: 390, Height: 420},
+	}); err != nil {
+		return err
+	}
+	if err := page.Locator("button[type=submit]").Click(); err != nil {
 		return fmt.Errorf("nav-phone: %w", err)
 	}
 	if err := page.Locator("details.nav-more summary").Click(); err != nil {
@@ -150,7 +187,7 @@ func phoneNav(browser playwright.Browser, base, out string) error {
 	time.Sleep(300 * time.Millisecond)
 	_, err = page.Screenshot(playwright.PageScreenshotOptions{
 		Path: playwright.String(filepath.Join(out, "nav-phone.png")),
-		Clip: &playwright.Rect{X: 0, Y: 0, Width: 390, Height: 420},
+		Clip: &playwright.Rect{X: 0, Y: 0, Width: 390, Height: 470},
 	})
 	return err
 }

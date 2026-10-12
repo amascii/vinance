@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
+	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog/v2"
@@ -29,6 +30,10 @@ type Server struct {
 	q      *gen.Queries
 	ledger *ledger.Service
 	now    func() time.Time
+
+	passwordHash  []byte // set by WithAuth; nil means no login
+	secureCookies bool
+	sessions      *scs.SessionManager
 }
 
 // Option customises NewRouter.
@@ -54,13 +59,21 @@ func NewRouter(logger *slog.Logger, conn *sql.DB, opts ...Option) http.Handler {
 	r.Use(middleware.Recoverer)
 	// Reject cross-site state-changing requests (a hostile web page POSTing to localhost).
 	r.Use(http.NewCrossOriginProtection().Handler)
-	r.Use(auth)
+	if s.passwordHash != nil {
+		s.sessions = s.newSessions()
+		r.Use(s.sessions.LoadAndSave, s.requireLogin)
+	}
 	r.Use(views.WithPath)
 
 	static, _ := fs.Sub(staticFS, "static")
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServerFS(static)))
 
 	r.Get("/healthz", s.healthz)
+	if s.passwordHash != nil {
+		r.Get("/login", s.loginGet)
+		r.With(loginLimit()).Post("/login", s.loginPost)
+		r.Post("/logout", s.logoutPost)
+	}
 	r.Get("/", s.home)
 	r.Get("/accounts", s.accounts)
 	r.Get("/accounts/manage", s.accountManageGet)
@@ -94,9 +107,6 @@ func NewRouter(logger *slog.Logger, conn *sql.DB, opts ...Option) http.Handler {
 	r.Post("/quickadd/suggest/tags", s.suggestTags)
 	return r
 }
-
-// auth is a placeholder for future authentication (Tailscale / login). No-op in v1.
-func auth(next http.Handler) http.Handler { return next }
 
 func (s *Server) healthz(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")

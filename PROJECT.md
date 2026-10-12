@@ -29,7 +29,7 @@ A simple, fast personal finance tracker — a lighter alternative to GnuCash, fo
 | Build | `Makefile`: `generate`, `build`, `run`, `test`, `lint` | |
 | VCS | git, local only (no remote yet), **trunk-based** | Small commits straight to `main`; tests must pass before committing |
 
-Config is read from environment variables: `VINANCE_DB` (default `./data/vinance.db`, gitignored), `VINANCE_ADDR` (default `127.0.0.1:8080`), `LOG_LEVEL` (default `info`).
+Config is read from environment variables: `VINANCE_DB` (default `./data/vinance.db`, gitignored), `VINANCE_ADDR` (default `127.0.0.1:8080`), `LOG_LEVEL` (default `info`), `VINANCE_PASSWORD_HASH` (bcrypt hash; turns login on, see Decision 14), `VINANCE_SECURE_COOKIES` (`true` when served over HTTPS).
 
 ## Decisions
 
@@ -41,8 +41,7 @@ Config is read from environment variables: `VINANCE_DB` (default `./data/vinance
 3. **Multi-currency.** Each real account has one currency (USD, MXN, JPY, KRW so far). Each split stores `amount` (in the
    split's currency) and `value` (in the transaction's currency), like GnuCash. Store integers in minor units, never floats:
    USD/MXN have 2 decimals, JPY/KRW have 0. Reports show per currency, and USD conversion uses rates from the `prices` table.
-4. **Single user, phone access eventually, hosting undecided.** Build for localhost first. Keep auth as a chi middleware
-   that does nothing in v1, so we can add Tailscale or a VPS login later without restructuring.
+4. **Single user, phone access eventually, hosting undecided.** Build for localhost first. Auth is a chi middleware that was a no-op in v1; it is now password login (Decision 14).
 5. **Quick add is a structured form** (replaced the original one-line text bar on 2026-10-02): **two consistent rows** (row 1: type, account(s), date; row 2: description, amount, tags and a **+** button; laptop/desktop first, wraps on phones): Spend/Income/Transfer *dropdown*, account select(s) (a scoped register's transfer direction is a dropdown too), labels are visually hidden (placeholders/aria); there is no header/summary/"today" hint text, only the post-save confirmation, a calendar date picker only (no typing dates; the ‹ › / Today buttons were removed 2026-10-02), description with history autocomplete, amount, one tags text field with suggestions. The text grammar below survives only for **recurring rules**, which still store a quick-add line.
 6. **Split transactions are first-class.** A transaction mirrors one statement line (e.g. Walmart $65.00 on BRISK) and can be
    broken into item lines (splits), each with its own amount, memo and tags (`#drinks`, `#snacks`, `#stationary`).
@@ -58,6 +57,8 @@ Config is read from environment variables: `VINANCE_DB` (default `./data/vinance
 11. **Filtered total (decided 2026-10-05):** whenever a search/filter is active, `/transactions` shows a sticky bottom line with the **net movement of the real (asset/liability) accounts over the whole matching set**, one amount per transaction currency (never mixed), signed (negative = money went out), no "owes you" wording. Same net as each row's `Summary`, so own-account transfers net to zero. Summed in SQL (`ledger.Service.Totals`), so it covers rows past the first page. Use case: lending money, `meal (john)` -100 then `transfer (john)` +50 → -50.
 12. **CI and branch protection (decided 2026-10-07):** every change goes through a PR. `.github/workflows/ci.yml` runs on each PR and on `main`: a `changes` job skips the heavy jobs for docs-only diffs, then `test` (generated code is current, build, vet, `go test ./...`) and `e2e` (Playwright on Ubuntu). Branch protection on `main` requires `test` and `e2e`, requires a PR (0 approvals, since the owner cannot approve their own), blocks force-pushes and deletion, and applies to admins. Merges are squash-only. No workflow-level `paths:` filter: it would leave required checks pending forever on docs-only PRs; skipped jobs count as passing instead.
 13. **Navigation (decided 2026-10-11):** "priority+" top bar, not a hamburger-only menu (hidden nav gets used far less). Left: **Home** (house icon; replaces the "vinance" brand, which stays in `<title>`). Right: **Accounts** and **Transactions** (the frequent pages), then **More** (☰), a Pico `<details class="dropdown">` holding Budgets, Recurring, Tags, Manage accounts, Manage tags. Every item is icon + label (inline Lucide SVGs, no icon font/CDN); under 36rem only Accounts keeps its visible label, the rest keep it for screen readers. The current page gets `aria-current="page"` and a tint; a page inside the menu also tints More. Stays at the top on phones (a bottom tab bar would fight Safari's toolbar and the keyboard on the entry form). Works without JS; JS only adds Escape-to-close.
+14. **Login (decided 2026-10-12):** one user, so **roll our own** rather than Auth0 (OIDC, a tenant and callback URLs per hostname, and a third-party outage locking us out of an app on our own machine, all to check one password). A bcrypt hash in `VINANCE_PASSWORD_HASH` (`vinance hash-password` makes it; it contains `$`, so single-quote it in a shell), sessions in the app DB via `alexedwards/scs` + its sqlite3store (`sessions` table, migration 0005), cookie `vinance_session`: HttpOnly, SameSite=Lax, `Secure` only when `VINANCE_SECURE_COOKIES=true` (behind HTTPS the app itself still sees HTTP, so it can't tell), **30-day** lifetime. Everything except `/login`, `/healthz` and `/static/*` needs a session; logged-out GETs go to `/login?next=…`, and an htmx request answers 401 + `HX-Redirect` to the page the user is on (`HX-Current-URL`) so a login form is never swapped into a fragment. Login renews the session token, `next` must be a same-site path, `POST /login` is throttled to 10/minute **in total** (a per-IP key is spoofable via `X-Forwarded-For` behind a proxy; one user loses nothing), responses are `Cache-Control: private, no-store`. **Safety rail:** the server refuses to start on a non-loopback `VINANCE_ADDR` without a password hash (`make run-lan` now needs one), and with no hash on loopback it logs a warning. CSRF stays with `http.CrossOriginProtection`. No password reset by design: generate a new hash and restart; changing the hash does not log out existing sessions (delete rows from `sessions` for that). Planned hosting is this Mac behind Tailscale (`tailscale serve`, never `funnel`), with the login as a second layer.
+
 ## Roadmap
 
 - **v1:** skeleton, schema, GnuCash import, quick-add, transaction editor with splits, transaction list and filters, balances, tag report, imbalance fixing.
@@ -172,13 +173,14 @@ The feature layer is the main workhorse because most UI behavior is server-rende
 
 ```
 make run                                  # http://127.0.0.1:8080, DB at ./data/vinance.db (auto-migrated)
-make run-lan                              # same, listening on 0.0.0.0:8080 (phone/other computers on the LAN; no login!)
+make run-lan                              # same, listening on 0.0.0.0:8080 (phone/other computers on the LAN); needs VINANCE_PASSWORD_HASH
 make test                                 # unit + HTTP feature tests (fast)
 make e2e-install && make e2e              # one-time browser setup, then Playwright journeys
 make generate                             # after editing *.templ or internal/db/queries/*.sql (generated code is committed)
 ```
 
-Env: `VINANCE_DB`, `VINANCE_ADDR`, `LOG_LEVEL` (see Stack). Logs are JSON on stdout.
+Env: `VINANCE_DB`, `VINANCE_ADDR`, `LOG_LEVEL`, `VINANCE_PASSWORD_HASH`, `VINANCE_SECURE_COOKIES` (see Stack). Logs are JSON on stdout.
+Turn login on: `go run ./cmd/vinance hash-password` (prompts, prints a bcrypt hash), then `VINANCE_PASSWORD_HASH='<hash>' make run`.
 
 ## Pages and routes
 
@@ -192,26 +194,27 @@ Env: `VINANCE_DB`, `VINANCE_ADDR`, `LOG_LEVEL` (see Stack). Logs are JSON on std
 | `/recurring` | Due recurring entries (Add / Skip), rules with schedules (add, edit, pause, delete) |
 | `/tags`, `/tags/manage` | Spending/income by tag with date ranges and bars; rename / merge / delete tags |
 | (every page) | Top nav: Home · Accounts · Transactions · More ▾ (Budgets, Recurring, Tags, Manage accounts, Manage tags); see Decision 13 |
-| `/healthz` | JSON health check (pings the DB) |
+| `/login`, `/logout` | Only when `VINANCE_PASSWORD_HASH` is set (Decision 14): password form (no nav) and POST-only logout (More → Log out). Without the hash these routes don't exist |
+| `/healthz` | JSON health check (pings the DB; open without a session) |
 
 POSTs are protected by `http.CrossOriginProtection`; every state-changing form also works without JS.
 
 ## Project layout
 
 ```
-cmd/vinance/main.go          subcommands: serve (default), migrate
+cmd/vinance/main.go          subcommands: serve (default), migrate, hash-password
 cmd/screenshots/main.go      regenerates docs/screenshots from demo data (`make screenshots`)
 internal/config              env config
 internal/logging             slog JSON logger
 internal/db                  Open (SQLite pragmas), Migrate (embedded goose migrations)
 internal/db/gen             sqlc generated code
-internal/db/migrations/      0001_init, 0002_description_index, 0003_recurring, 0004_budgets
+internal/db/migrations/      0001_init, 0002_description_index, 0003_recurring, 0004_budgets, 0005_sessions
 internal/demo                synthetic demo ledger (README screenshots; never real data)
 internal/db/queries/         sqlc query files (accounts, tags, transactions, suggest, reports)
 internal/ledger              money + currency conversion + rates, slugs, validation, Service (create/update/delete/get/list/count,
                              tags, accounts, balances, tag report, LastLike), Transaction.Summary
 internal/quickadd            quick-add parser + account resolver (pure, no DB)
-internal/web                 chi router, handlers (quickadd, transactions, editor, accounts, accountmanage, tags, tagmanage), flash cookie
+internal/web                 chi router, handlers (quickadd, transactions, editor, accounts, accountmanage, tags, tagmanage), flash cookie, auth (login, sessions)
 internal/web/views           templ components + view models
 internal/web/static          htmx.min.js, pico.min.css, app.css, app.js
 internal/testutil            temp migrated DB / test server (fixed clock) / seed helpers
@@ -268,6 +271,9 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
 - [x] **Group transactions by date:** `/transactions` shows a date heading ("October 5, 2026") above each day's rows, like a bank app; the per-row date is hidden there.
 - [x] **`make run-lan`:** run bound to `0.0.0.0:8080` for access from other devices on the same network
 - [x] **Navigation rethink:** Home (house) left; Accounts + Transactions visible; the rest under a More menu; icons, current-page highlight, one row on phones (Decision 13)
+- [x] **Login:** password + 30-day session (Decision 14), `vinance hash-password`, refuse non-loopback start without a hash, Log out in the More menu. Tests: feature (redirects, htmx redirect, wrong/right password, renewal, open-redirect, rate limit, no-auth mode), config validation, hash command, Playwright journey.
+- [ ] **Run as a service on the Mac:** LaunchAgent + `make deploy`, separate production DB outside the repo, Tailscale serve (Decision 14)
+- [ ] **Backups to S3:** nightly `sqlite3 .backup`, `age`-encrypted, 90-day lifecycle; `scripts/setup-backup-bucket.sh` with the AWS CLI (no Terraform)
 
 ## Log
 
@@ -446,6 +452,7 @@ Do these in order. One commit per task (or smaller). Tick the box and add a Log 
   ~10 feature tests (both registers, both directions, +, bank→bank, refusals, preview, autocomplete round trip) and a Playwright journey of "Neo Credit Card Payment 300.00 261003 @neo".
 
 - **2026-10-07** — Added `make run-lan` (`VINANCE_ADDR=0.0.0.0:8080`) so the app can be opened from a phone or another computer on the same Wi-Fi. `make run` is unchanged (localhost only). No auth exists, so README keeps the trusted-network warning.
+- **2026-10-12** — Login (Decision 14): bcrypt password hash from `VINANCE_PASSWORD_HASH`, scs sessions in SQLite (30 days), `/login` + `/logout`, htmx-aware redirect, global login throttle, Log out in the More menu, `vinance hash-password`, startup refusal on a non-loopback address without a hash. `make run-lan` now needs a hash. New `login.png` screenshot; `nav-phone.png` now shows Log out. Next: run as a service on the Mac behind Tailscale, then S3 backups.
 
 ## Status
 

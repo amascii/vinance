@@ -18,6 +18,12 @@ header.container, main.container { max-width: 1200px; padding-inline: clamp(1rem
 .site-nav details.nav-more > ul li a { display: flex; align-items: center; gap: 0.6rem; }
 .site-nav details.nav-more > ul li a.active { color: var(--pico-primary); font-weight: 600; }
 .site-nav details.nav-more > ul li:nth-child(4) { border-top: 1px solid var(--pico-muted-border-color); }
+.site-nav details.nav-more > ul li.logout { padding: 0; border-top: 1px solid var(--pico-muted-border-color); } /* Pico pads li and pulls links back out with negative margins; the button just fills the li */
+.site-nav details.nav-more > ul li.logout form { margin: 0; }
+/* Pico redefines --pico-color inside <button>; a link-looking button must set its own text colour (the dropdown's, to match the links) */
+.site-nav details.nav-more > ul .logout-btn { display: flex; align-items: center; gap: 0.6rem; width: 100%; height: auto; margin: 0; padding: calc(var(--pico-form-element-spacing-vertical) * 0.5) var(--pico-form-element-spacing-horizontal);
+  border: 0; background: transparent; box-shadow: none; color: var(--pico-dropdown-color); font-weight: inherit; text-align: left; }
+.site-nav details.nav-more > ul .logout-btn:hover { background-color: var(--pico-dropdown-hover-background-color); }
 @media (max-width: 36rem) {
   .site-nav .label:not(.keep) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .site-nav .navlink { padding: 0.45rem 0.55rem; }
@@ -342,3 +348,8 @@ li.txn:has(.pick:checked) { background: color-mix(in srgb, var(--series-1) 9%, t
 .bulk-bar .only-move { display: none; }
 .bulk-bar:has(select[name=op] option[value=move]:checked) .only-move { display: inline-block; }
 .bulk-summary { font-size: 1.1rem; }
+
+/* Login page */
+main.login { max-width: 26rem; margin-top: 12vh; }
+main.login h1 { font-size: 1.5rem; }
+main.login .error { color: var(--pico-del-color); display: block; margin-bottom: 1rem; }

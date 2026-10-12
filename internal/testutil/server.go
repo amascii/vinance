@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/amascii/vinance/internal/db"
 	"github.com/amascii/vinance/internal/db/gen"
 	"github.com/amascii/vinance/internal/ledger"
@@ -43,6 +45,29 @@ func NewServerWithDB(t *testing.T) (*httptest.Server, *sql.DB) {
 	t.Helper()
 	conn := NewDB(t)
 	srv := httptest.NewServer(web.NewRouter(quietLogger(), conn, web.WithClock(func() time.Time { return Today })))
+	t.Cleanup(srv.Close)
+	return srv, conn
+}
+
+// Password is the login password of servers made by NewAuthServer.
+const Password = "correct horse battery"
+
+// NewAuthServer is NewServer with password login on (password: Password).
+func NewAuthServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv, _ := NewAuthServerWithDB(t)
+	return srv
+}
+
+// NewAuthServerWithDB is NewAuthServer that also returns the DB handle.
+func NewAuthServerWithDB(t *testing.T) (*httptest.Server, *sql.DB) {
+	t.Helper()
+	hash, err := bcrypt.GenerateFromPassword([]byte(Password), bcrypt.MinCost) // MinCost keeps tests fast
+	if err != nil {
+		t.Fatalf("hash test password: %v", err)
+	}
+	conn := NewDB(t)
+	srv := httptest.NewServer(web.NewRouter(quietLogger(), conn, web.WithClock(func() time.Time { return Today }), web.WithAuth(string(hash), false)))
 	t.Cleanup(srv.Close)
 	return srv, conn
 }
