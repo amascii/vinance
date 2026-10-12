@@ -15,6 +15,15 @@ func WithPath(next http.Handler) http.Handler {
 	})
 }
 
+type loggedInKey struct{}
+
+// WithLoggedIn marks the request as authenticated, so the nav offers Log out.
+func WithLoggedIn(ctx context.Context) context.Context {
+	return context.WithValue(ctx, loggedInKey{}, true)
+}
+
+func loggedIn(ctx context.Context) bool { v, _ := ctx.Value(loggedInKey{}).(bool); return v }
+
 type navLink struct {
 	Href, Label, Icon string
 }

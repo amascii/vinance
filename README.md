@@ -56,7 +56,7 @@ Go + [chi](https://github.com/go-chi/chi) + [templ](https://templ.guide) + [htmx
 
 On a phone the bar stays at the top as a single row of icons (only Accounts keeps its label), and the More menu opens below it:
 
-![Phone-width nav with the More menu open](docs/screenshots/nav-phone.png)
+![Phone-width nav with the More menu open (Log out appears when a password is set)](docs/screenshots/nav-phone.png)
 
 ## Running it
 
@@ -66,7 +66,7 @@ You need Go (see `go.mod` for the version). There is nothing else to install: SQ
 git clone https://github.com/amascii/vinance.git
 cd vinance
 make run          # http://127.0.0.1:8080
-make run-lan      # same, but reachable from your phone/other computers on the same Wi-Fi (http://<your-lan-ip>:8080)
+make run-lan      # same, but reachable from your phone/other computers on the same Wi-Fi (http://<your-lan-ip>:8080); needs a login, see below
 ```
 
 The database is created and migrated on first start at `./data/vinance.db`. `data/` is gitignored, so your numbers never end up in the repo.
@@ -77,9 +77,24 @@ Add your first account under **More → Manage accounts**, then use the form on 
 | `VINANCE_DB` | `./data/vinance.db` | SQLite file |
 | `VINANCE_ADDR` | `127.0.0.1:8080` | listen address |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` (logs are JSON) |
+| `VINANCE_PASSWORD_HASH` | (none) | bcrypt hash of your password; turns the login on |
+| `VINANCE_SECURE_COOKIES` | `false` | set `true` when you reach the app over HTTPS |
 
-> **There is no login.** vinance is built for `localhost`. Don't expose it to a network you don't trust; if you want phone access, put it behind
-> something that authenticates (for example Tailscale) first.
+### Login
+
+By default there is no login, and the server refuses to listen on anything but `localhost` in that state. To use it from a phone or another machine,
+set a password:
+
+```sh
+go run ./cmd/vinance hash-password        # asks for a password, prints a bcrypt hash
+VINANCE_PASSWORD_HASH='<paste the hash>' make run-lan     # single quotes: the hash contains $
+```
+
+Every page then asks for the password; you stay logged in for 30 days and can log out under **More → Log out**. Failed logins are
+throttled. There is no reset: make a new hash and restart. A login is one layer, so for use away from home still put the app behind
+something private such as Tailscale and serve it over HTTPS (with `VINANCE_SECURE_COOKIES=true`).
+
+![The login page at phone width](docs/screenshots/login.png)
 
 ## Development
 

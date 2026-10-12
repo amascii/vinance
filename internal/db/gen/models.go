@@ -44,6 +44,12 @@ type Recurring struct {
 	CreatedAt  string
 }
 
+type Session struct {
+	Token  string
+	Data   []byte
+	Expiry float64
+}
+
 type Split struct {
 	ID            int64
 	TransactionID int64

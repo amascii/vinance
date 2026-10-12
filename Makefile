@@ -10,7 +10,8 @@ build: generate
 run: generate
 	go run ./cmd/vinance serve
 
-# Listens on all interfaces so phones/other computers on the same network can reach it. There is no login: trusted networks only.
+# Listens on all interfaces so phones/other computers on the same network can reach it. Refuses to start without
+# VINANCE_PASSWORD_HASH (make one with: go run ./cmd/vinance hash-password).
 run-lan: generate
 	VINANCE_ADDR=0.0.0.0:8080 go run ./cmd/vinance serve
 

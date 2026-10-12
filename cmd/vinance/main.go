@@ -31,6 +31,8 @@ func main() {
 	switch cmd {
 	case "serve":
 		err = serve(cfg, logger)
+	case "hash-password":
+		err = hashPassword(os.Stdin, os.Stdout, os.Stderr)
 	case "migrate":
 		err = migrate(cfg, logger)
 	default:
@@ -66,6 +68,15 @@ func migrate(cfg config.Config, logger *slog.Logger) error {
 }
 
 func serve(cfg config.Config, logger *slog.Logger) error {
+	if err := cfg.Validate(); err != nil {
+		return err
+	}
+	var opts []web.Option
+	if cfg.PasswordHash != "" {
+		opts = append(opts, web.WithAuth(cfg.PasswordHash, cfg.SecureCookies))
+	} else {
+		logger.Warn("login disabled: VINANCE_PASSWORD_HASH is not set", "addr", cfg.Addr)
+	}
 	conn, err := openDB(context.Background(), cfg, logger)
 	if err != nil {
 		return err
@@ -74,7 +85,7 @@ func serve(cfg config.Config, logger *slog.Logger) error {
 
 	srv := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           web.NewRouter(logger, conn),
+		Handler:           web.NewRouter(logger, conn, opts...),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

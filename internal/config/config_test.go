@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestLoadDefaults(t *testing.T) {
@@ -30,4 +32,35 @@ func TestLoadOverrides(t *testing.T) {
 func TestLoadBadLogLevelFallsBack(t *testing.T) {
 	t.Setenv("LOG_LEVEL", "nonsense")
 	assert.Equal(t, slog.LevelInfo, Load().LogLevel)
+}
+
+func TestValidate(t *testing.T) {
+	hash, err := bcrypt.GenerateFromPassword([]byte("pw"), bcrypt.MinCost)
+	require.NoError(t, err)
+
+	for addr, ok := range map[string]bool{
+		"127.0.0.1:8080": true, "localhost:8080": true, "[::1]:8080": true,
+		"0.0.0.0:8080": false, ":8080": false, "192.168.1.5:8080": false, "nonsense": false,
+	} {
+		err := Config{Addr: addr}.Validate()
+		if ok {
+			assert.NoError(t, err, addr)
+		} else {
+			assert.ErrorContains(t, err, "VINANCE_PASSWORD_HASH is required", addr)
+		}
+	}
+
+	assert.NoError(t, Config{Addr: "0.0.0.0:8080", PasswordHash: string(hash)}.Validate(), "a password makes any address fine")
+	assert.ErrorContains(t, Config{Addr: "127.0.0.1:8080", PasswordHash: "hunter2"}.Validate(), "not a bcrypt hash")
+}
+
+func TestLoadAuthSettings(t *testing.T) {
+	t.Setenv("VINANCE_PASSWORD_HASH", "h")
+	t.Setenv("VINANCE_SECURE_COOKIES", "true")
+	c := Load()
+	assert.Equal(t, "h", c.PasswordHash)
+	assert.True(t, c.SecureCookies)
+
+	t.Setenv("VINANCE_SECURE_COOKIES", "")
+	assert.False(t, Load().SecureCookies)
 }
