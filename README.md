@@ -118,6 +118,12 @@ Never use `tailscale funnel`: that makes it public.
 
 The password hash is stored in `~/Library/LaunchAgents/com.amascii.vinance.plist` (mode 600). The Mac must not sleep: the app is down while it does.
 
+**After a restart.** The service is a LaunchAgent, so it starts when you *log in*, not when the Mac boots. With FileVault on (recommended: the database holds your finances)
+the Mac stops at the disk-unlock screen after a restart or power cut, and nothing runs until you type the password there and log in. Then the app starts by itself;
+make sure Tailscale is set to start at login too (`tailscale serve --bg` keeps its settings across restarts). Your data is safe either way: the app stops cleanly and SQLite
+survives a sudden power loss. Expect a short outage on a planned restart, and none of the app while you are away after a power cut. Consider turning off automatic macOS update
+installs (System Settings → General → Software Update) so restarts happen when you choose. Auto-login would avoid the prompt, but it can't be used with FileVault, and turning FileVault off is not worth it.
+
 ## Development
 
 ```sh
