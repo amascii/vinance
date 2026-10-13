@@ -1,4 +1,4 @@
-.PHONY: generate build run run-lan test e2e e2e-install screenshots lint tidy
+.PHONY: generate build run run-lan test e2e e2e-install screenshots lint tidy service-install deploy service-status service-uninstall
 
 generate:
 	go tool templ generate
@@ -33,3 +33,17 @@ lint:
 
 tidy:
 	go mod tidy
+
+# Run as a background service on this Mac (launchd). See README "Running as a service".
+service-install:
+	scripts/service.sh install
+
+# Build main, back up the DB, swap the binary and restart; rolls back if the new build is unhealthy.
+deploy:
+	scripts/service.sh deploy
+
+service-status:
+	scripts/service.sh status
+
+service-uninstall:
+	scripts/service.sh uninstall

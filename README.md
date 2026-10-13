@@ -96,6 +96,34 @@ something private such as Tailscale and serve it over HTTPS (with `VINANCE_SECUR
 
 ![The login page at phone width](docs/screenshots/login.png)
 
+### Running as a service (macOS)
+
+To keep it running in the background on a Mac and reach it from your phone through [Tailscale](https://tailscale.com):
+
+```sh
+make service-install    # builds, copies data/vinance.db, writes the LaunchAgent, starts it (asks for your password hash)
+tailscale serve --bg 8787   # publishes it, to your own devices only, at https://<mac-name>.<tailnet>.ts.net
+```
+
+The service listens on `127.0.0.1:8787` (so `make run` on 8080 still works beside it), keeps its own database in
+`~/Library/Application Support/vinance/` (the repo's `data/` is only copied from, never used) and logs JSON to `~/Library/Logs/vinance/vinance.log`.
+It starts when you log in and restarts if it crashes. It sets `VINANCE_SECURE_COOKIES=true`, so open it over HTTPS (the Tailscale URL).
+Never use `tailscale funnel`: that makes it public.
+
+| | |
+|---|---|
+| `make deploy` | after merging to `main`: pull, then this builds `main`, backs up the database, restarts, and rolls back the binary if the new build doesn't come up healthy |
+| `make service-status` | is it loaded, does `/healthz` answer |
+| `make service-uninstall` | stops it and removes the LaunchAgent; your data stays |
+
+The password hash is stored in `~/Library/LaunchAgents/com.amascii.vinance.plist` (mode 600). The Mac must not sleep: the app is down while it does.
+
+**After a restart.** The service is a LaunchAgent, so it starts when you *log in*, not when the Mac boots. With FileVault on (recommended: the database holds your finances)
+the Mac stops at the disk-unlock screen after a restart or power cut, and nothing runs until you type the password there and log in. Then the app starts by itself;
+make sure Tailscale is set to start at login too (`tailscale serve --bg` keeps its settings across restarts). Your data is safe either way: the app stops cleanly and SQLite
+survives a sudden power loss. Expect a short outage on a planned restart, and none of the app while you are away after a power cut. Consider turning off automatic macOS update
+installs (System Settings → General → Software Update) so restarts happen when you choose. Auto-login would avoid the prompt, but it can't be used with FileVault, and turning FileVault off is not worth it.
+
 ## Development
 
 ```sh
